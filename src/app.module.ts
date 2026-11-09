@@ -10,6 +10,7 @@ import { EstadoCuentaModule } from '@EstadoCuenta';
 import { HealthModule } from '@Health';
 import { PaquetesModule } from '@Paquetes';
 import { PrismaModule } from '@Prisma';
+import { ReportesModule } from '@Reportes';
 import { UnidadesModule } from '@Unidades';
 import { UsersModule } from '@Users';
 import { validateEnv } from '@Config';
@@ -32,6 +33,7 @@ import { validateEnv } from '@Config';
     EstadoCuentaModule,
     AutorizacionesModule,
     AreasModule,
+    ReportesModule,
   ],
   providers: [
     {
