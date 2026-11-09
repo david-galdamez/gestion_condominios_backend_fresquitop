@@ -14,6 +14,8 @@ export interface EnvConfig {
   JWT_EXPIRES_IN: string;
   REFRESH_TOKEN_EXPIRES_IN_DAYS: number;
   BCRYPT_SALT_ROUNDS: number;
+  /** Carpeta de archivos subidos (fotos de paquetes, H09). */
+  UPLOAD_DIR: string;
 }
 
 const requiredVars = ['DATABASE_URL', 'JWT_SECRET'] as const;
@@ -77,5 +79,6 @@ export function validateEnv(raw: Record<string, unknown>): EnvConfig {
     JWT_EXPIRES_IN: readString(raw, 'JWT_EXPIRES_IN', '15m'),
     REFRESH_TOKEN_EXPIRES_IN_DAYS: readInt(raw, 'REFRESH_TOKEN_EXPIRES_IN_DAYS', 7),
     BCRYPT_SALT_ROUNDS: readInt(raw, 'BCRYPT_SALT_ROUNDS', 12),
+    UPLOAD_DIR: readString(raw, 'UPLOAD_DIR', 'uploads'),
   };
 }
