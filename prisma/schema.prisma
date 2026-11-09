@@ -52,6 +52,9 @@ model User {
   refreshTokens        RefreshToken[]
   unidades             UsuarioUnidad[]
   autorizacionesVisita AutorizacionVisita[]
+  reportes             Reporte[]
+  historialReportes    HistorialReporte[]
+  paquetesRecibidos    Paquete[]
 
   @@map("users")
 }
@@ -99,6 +102,7 @@ model Unidad {
   usuarios       UsuarioUnidad[]
   cuotas         Cuota[]
   autorizaciones AutorizacionVisita[]
+  paquetes       Paquete[]
 
   @@index([torreId])
   @@map("unidad")
@@ -196,4 +200,177 @@ model AutorizacionVisita {
   @@unique([codigo, fechaVisita])
   @@index([residenteId, fechaVisita])
   @@map("autorizacion_visita")
+}
+
+enum Mensajeria {
+  CORREOS
+  DHL
+  FEDEX
+  UPS
+  AMAZON
+  OTRA
+
+  @@map("mensajeria")
+}
+
+// H09 solo crea EN_PORTERIA; RETENIDO lo marca el sistema y ENTREGADO lo hace H10.
+enum EstadoPaquete {
+  EN_PORTERIA
+  RETENIDO
+  ENTREGADO
+
+  @@map("estado_paquete")
+}
+
+// Paquete recibido en portería (H09). No se borra: es la constancia de recepción.
+model Paquete {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "PAQ-000123": sale de la secuencia paquete_codigo_seq (creada en el SQL de la migración).
+  codigoPaquete String @unique @map("codigo_paquete") @db.VarChar(10)
+  // 6 dígitos aleatorios. Solo lo ve el residente; nunca se devuelve a seguridad.
+  codigoRetiro  String @map("codigo_retiro") @db.Char(6)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Nombre que trae la etiqueta (no tiene que ser un usuario).
+  destinatario String     @db.VarChar(60)
+  mensajeria   Mensajeria
+  guia         String?    @db.VarChar(40)
+  // Ruta relativa dentro de UPLOAD_DIR, p. ej. "paquetes/<uuid>.jpg".
+  fotoUrl      String     @map("foto_url") @db.VarChar(255)
+
+  estado     EstadoPaquete @default(EN_PORTERIA)
+  recibidoEn DateTime      @default(now()) @map("recibido_en")
+
+  // Guardia que lo recibió: siempre sale de la sesión.
+  recibidoPorId String @map("recibido_por") @db.Uuid
+  recibidoPor   User   @relation(fields: [recibidoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([estado, recibidoEn])
+  @@index([unidadId, estado])
+  @@map("paquete")
+}
+
+// Área común reservable (H03). No se borra: desactivarla conserva el historial
+// y las reservas futuras confirmadas (H04).
+model AreaComun {
+  id     String @id @default(uuid()) @db.Uuid
+  // Único; además el servicio compara sin distinguir mayúsculas.
+  nombre String @unique @db.VarChar(40)
+
+  // CHECK (capacidad BETWEEN 1 AND 200) agregado a mano en el SQL de la migración.
+  capacidad Int
+
+  // Hora local del negocio, sin zona. CHECK (en punto y cierre > apertura) en el SQL.
+  horaApertura DateTime @map("hora_apertura") @db.Time(0)
+  horaCierre   DateTime @map("hora_cierre") @db.Time(0)
+
+  // CHECK (duracion_max_horas BETWEEN 1 AND 8) en el SQL.
+  duracionMaxHoras Int     @default(3) @map("duracion_max_horas")
+  activa           Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("area_comun")
+}
+
+// ---------------------------------------------------------------------------
+// H05 · Reportes de incidencias y mantenimiento
+// ---------------------------------------------------------------------------
+
+enum CategoriaReporte {
+  FUGA
+  LUMINARIA
+  ASCENSOR
+  LIMPIEZA
+  OTRO
+
+  @@map("categoria_reporte")
+}
+
+enum PrioridadReporte {
+  BAJA
+  MEDIA
+  ALTA
+
+  @@map("prioridad_reporte")
+}
+
+enum EstadoReporte {
+  ABIERTO
+  EN_PROCESO
+  RESUELTO
+
+  @@map("estado_reporte")
+}
+
+// Problema reportado por un residente. Se muestra como REP-000123.
+model Reporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Consecutivo (serial de Postgres); la API lo formatea como "REP-000123".
+  numero Int @unique @default(autoincrement())
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  titulo      String           @db.VarChar(80)
+  categoria   CategoriaReporte
+  // Una torre (tabla `torre`) o un área común de la lista fija del backend.
+  ubicacion   String
+  descripcion String           @db.VarChar(500)
+
+  // Sin criterio de aceptación en H05: queda con valor por defecto.
+  prioridad PrioridadReporte @default(MEDIA)
+  estado    EstadoReporte    @default(ABIERTO)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  evidencias EvidenciaReporte[]
+  historial  HistorialReporte[]
+
+  @@index([residenteId, createdAt])
+  @@map("reporte")
+}
+
+// Foto adjunta a un reporte. `archivo` es la llave de almacenamiento (nombre
+// del archivo en disco), no una URL: la API arma la URL de descarga.
+model EvidenciaReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  archivo     String
+  mimeType    String   @map("mime_type")
+  tamanoBytes Int      @map("tamano_bytes")
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId])
+  @@map("evidencia_reporte")
+}
+
+// Trazabilidad: una fila por cada estado por el que pasa el reporte.
+model HistorialReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  estado EstadoReporte
+
+  cambiadoPorId String @map("cambiado_por_id") @db.Uuid
+  cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId, createdAt])
+  @@map("historial_reporte")
 }

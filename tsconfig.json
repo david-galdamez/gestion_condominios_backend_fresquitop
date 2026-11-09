@@ -41,12 +41,20 @@
       "@Auth/*": ["./src/auth/*/index.ts"],
       "@Users": ["./src/users/index.ts"],
       "@Users/*": ["./src/users/*/index.ts"],
+      "@Paquetes": ["./src/paquetes/index.ts"],
+      "@Paquetes/*": ["./src/paquetes/*/index.ts"],
+      "@Archivos": ["./src/archivos/index.ts"],
+      "@Archivos/*": ["./src/archivos/*/index.ts"],
+      "@Notificaciones": ["./src/notificaciones/index.ts"],
+      "@Notificaciones/*": ["./src/notificaciones/*/index.ts"],
       "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
-      "@Unidades": ["./src/unidades/index.ts"],
-      "@Unidades/*": ["./src/unidades/*/index.ts"],
+      "@Areas": ["./src/areas/index.ts"],
+      "@Areas/*": ["./src/areas/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Unidades": ["./src/unidades/index.ts"],
+      "@Unidades/*": ["./src/unidades/*/index.ts"],
       "@Morosidad": ["./src/morosidad/index.ts"],
       "@Morosidad/*": ["./src/morosidad/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
@@ -55,7 +63,9 @@
       "@Prisma/*": ["./src/prisma/*/index.ts"],
       "@Common/*": ["./src/common/*/index.ts"],
       "@Config": ["./src/config/index.ts"],
-      "@PrismaClient": ["./src/generated/prisma/client.ts"]
+      "@PrismaClient": ["./src/generated/prisma/client.ts"],
+      "@Reportes": ["./src/reportes/index.ts"],
+      "@Reportes/*": ["./src/reportes/*/index.ts"]
     }
   }
 }
