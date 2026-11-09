@@ -51,6 +51,8 @@
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Areas": ["./src/areas/index.ts"],
+      "@Areas/*": ["./src/areas/*/index.ts"],
       "@Unidades": ["./src/unidades/index.ts"],
       "@Unidades/*": ["./src/unidades/*/index.ts"],
       "@Health": ["./src/health/index.ts"],

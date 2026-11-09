@@ -273,6 +273,27 @@ async function main() {
     });
   }
 
+  // Áreas comunes (H03): upsert por nombre, re-aplica la configuración.
+  const areasSeed = [
+    { nombre: 'Salón de eventos', capacidad: 80, apertura: '08:00', cierre: '22:00', duracion: 3 },
+    { nombre: 'Alberca', capacidad: 30, apertura: '07:00', cierre: '19:00', duracion: 2 },
+    { nombre: 'Gimnasio', capacidad: 15, apertura: '05:00', cierre: '22:00', duracion: 1 },
+    { nombre: 'Asador', capacidad: 20, apertura: '10:00', cierre: '21:00', duracion: 3 },
+  ];
+  for (const a of areasSeed) {
+    const datos = {
+      capacidad: a.capacidad,
+      horaApertura: new Date(`1970-01-01T${a.apertura}:00.000Z`),
+      horaCierre: new Date(`1970-01-01T${a.cierre}:00.000Z`),
+      duracionMaxHoras: a.duracion,
+    };
+    await prisma.areaComun.upsert({
+      where: { nombre: a.nombre },
+      update: datos,
+      create: { nombre: a.nombre, ...datos },
+    });
+  }
+
   console.log('Seed listo. Credenciales (contraseña común: ' + PASSWORD + '):');
   for (const { email, rol, unidades } of USUARIOS) {
     console.log(`  ${email}  [${rol}]  unidades: ${unidades.join(', ') || '-'}`);

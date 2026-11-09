@@ -9,7 +9,7 @@ export const PASSWORD = 'Demo1234!';
 /** Vacía todas las tablas de negocio; CASCADE resuelve el orden de las FK. */
 export async function limpiarTablas(prisma: PrismaService): Promise<void> {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
+    'TRUNCATE TABLE area_comun, autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
   );
 }
 
@@ -85,6 +85,29 @@ export function crearAutorizacion(
       fechaVisita: new Date(`${data.fechaVisita}T00:00:00.000Z`),
       horaEstimada: new Date(`1970-01-01T${data.horaEstimada ?? '10:00'}:00.000Z`),
       estado: data.estado ?? EstadoAutorizacion.VIGENTE,
+    },
+  });
+}
+
+export function crearArea(
+  prisma: PrismaService,
+  data: {
+    nombre: string;
+    capacidad?: number;
+    horaApertura?: string;
+    horaCierre?: string;
+    duracionMaxHoras?: number;
+    activa?: boolean;
+  },
+) {
+  return prisma.areaComun.create({
+    data: {
+      nombre: data.nombre,
+      capacidad: data.capacidad ?? 20,
+      horaApertura: new Date(`1970-01-01T${data.horaApertura ?? '08:00'}:00.000Z`),
+      horaCierre: new Date(`1970-01-01T${data.horaCierre ?? '20:00'}:00.000Z`),
+      duracionMaxHoras: data.duracionMaxHoras ?? 3,
+      activa: data.activa ?? true,
     },
   });
 }

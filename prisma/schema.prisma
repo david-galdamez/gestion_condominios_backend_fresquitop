@@ -253,3 +253,27 @@ model Paquete {
   @@index([unidadId, estado])
   @@map("paquete")
 }
+
+// Área común reservable (H03). No se borra: desactivarla conserva el historial
+// y las reservas futuras confirmadas (H04).
+model AreaComun {
+  id     String @id @default(uuid()) @db.Uuid
+  // Único; además el servicio compara sin distinguir mayúsculas.
+  nombre String @unique @db.VarChar(40)
+
+  // CHECK (capacidad BETWEEN 1 AND 200) agregado a mano en el SQL de la migración.
+  capacidad Int
+
+  // Hora local del negocio, sin zona. CHECK (en punto y cierre > apertura) en el SQL.
+  horaApertura DateTime @map("hora_apertura") @db.Time(0)
+  horaCierre   DateTime @map("hora_cierre") @db.Time(0)
+
+  // CHECK (duracion_max_horas BETWEEN 1 AND 8) en el SQL.
+  duracionMaxHoras Int     @default(3) @map("duracion_max_horas")
+  activa           Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("area_comun")
+}
