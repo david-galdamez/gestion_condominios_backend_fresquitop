@@ -1,5 +1,5 @@
 {
-  "compilerOptions": {
+"compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -43,10 +43,12 @@
       "@Users/*": ["./src/users/*/index.ts"],
       "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
-      "@Autorizaciones": ["./src/autorizaciones/index.ts"],
-      "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
       "@Unidades": ["./src/unidades/index.ts"],
       "@Unidades/*": ["./src/unidades/*/index.ts"],
+      "@Autorizaciones": ["./src/autorizaciones/index.ts"],
+      "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Morosidad": ["./src/morosidad/index.ts"],
+      "@Morosidad/*": ["./src/morosidad/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
       "@Health/*": ["./src/health/*/index.ts"],
       "@Prisma": ["./src/prisma/index.ts"],

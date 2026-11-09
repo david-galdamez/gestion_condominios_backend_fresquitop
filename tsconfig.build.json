@@ -1,7 +1,28 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "@Auth": ["./src/auth/index.ts"],
+      "@Auth/*": ["./src/auth/*/index.ts"],
+      "@Users": ["./src/users/index.ts"],
+      "@Users/*": ["./src/users/*/index.ts"],
+      "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
+      "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
+      "@Unidades": ["./src/unidades/index.ts"],
+      "@Unidades/*": ["./src/unidades/*/index.ts"],
+      "@Autorizaciones": ["./src/autorizaciones/index.ts"],
+      "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Morosidad": ["./src/morosidad/index.ts"],
+      "@Morosidad/*": ["./src/morosidad/*/index.ts"],
+      "@Health": ["./src/health/index.ts"],
+      "@Health/*": ["./src/health/*/index.ts"],
+      "@Prisma": ["./src/prisma/index.ts"],
+      "@Prisma/*": ["./src/prisma/*/index.ts"],
+      "@Common/*": ["./src/common/*/index.ts"],
+      "@Config": ["./src/config/index.ts"],
+      "@PrismaClient": ["./src/generated/prisma/client.ts"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
