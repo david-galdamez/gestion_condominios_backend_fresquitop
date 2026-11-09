@@ -5,13 +5,14 @@ import { APP_GUARD } from '@nestjs/core';
 import { AreasModule } from '@Areas';
 import { AuthModule } from '@Auth';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
-import { AutorizacionesModule } from '@Autorizaciones';
 import { EstadoCuentaModule } from '@EstadoCuenta';
+import { UnidadesModule } from '@Unidades';
+import { AutorizacionesModule } from '@Autorizaciones';
+import { MorosidadModule } from '@Morosidad';
 import { HealthModule } from '@Health';
 import { PaquetesModule } from '@Paquetes';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
-import { UnidadesModule } from '@Unidades';
 import { UsersModule } from '@Users';
 import { validateEnv } from '@Config';
 
@@ -20,7 +21,6 @@ import { validateEnv } from '@Config';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      // Si falta DATABASE_URL o JWT_SECRET, la app no arranca.
       validate: validateEnv,
     }),
     ScheduleModule.forRoot(),
@@ -29,20 +29,19 @@ import { validateEnv } from '@Config';
     UsersModule,
     PaquetesModule,
     AuthModule,
-    UnidadesModule,
     EstadoCuentaModule,
+    UnidadesModule,
     AutorizacionesModule,
-    AreasModule,
-    ReportesModule,
+    MorosidadModule,
+    AreasModule,     
+    ReportesModule,  
   ],
   providers: [
     {
-      // Todo cerrado por defecto: las rutas públicas se abren con @Public().
       provide: APP_GUARD,
       useExisting: JwtAuthGuard,
     },
     {
-      // Debe ir después del JwtAuthGuard: necesita request.user ya cargado.
       provide: APP_GUARD,
       useExisting: RolesGuard,
     },
