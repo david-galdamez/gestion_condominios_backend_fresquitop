@@ -10,6 +10,16 @@ import { Rol, type User } from '@PrismaClient';
 export class UnidadesController {
   constructor(private readonly unidades: UnidadRepository) {}
 
+  @Get()
+  @Roles(Rol.SEGURIDAD, Rol.ADMINISTRADOR)
+  @ApiOperation({ summary: 'Todas las unidades activas (selector de portería)' })
+  @ApiOkResponse({ type: UnidadResumenDto, isArray: true })
+  @ApiUnauthorizedResponse({ description: 'Sin sesión.' })
+  @ApiForbiddenResponse({ description: 'Rol no permitido.' })
+  listar(): Promise<UnidadResumenDto[]> {
+    return this.unidades.findActivas();
+  }
+
   @Get('mias')
   @Roles(Rol.RESIDENTE)
   @ApiOperation({ summary: 'Unidades del residente (para el selector)' })

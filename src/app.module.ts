@@ -8,6 +8,7 @@ import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
 import { AutorizacionesModule } from '@Autorizaciones';
 import { EstadoCuentaModule } from '@EstadoCuenta';
 import { HealthModule } from '@Health';
+import { PaquetesModule } from '@Paquetes';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
 import { UnidadesModule } from '@Unidades';
@@ -26,6 +27,7 @@ import { validateEnv } from '@Config';
     PrismaModule,
     HealthModule,
     UsersModule,
+    PaquetesModule,
     AuthModule,
     UnidadesModule,
     EstadoCuentaModule,

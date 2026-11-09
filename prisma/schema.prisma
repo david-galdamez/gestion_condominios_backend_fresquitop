@@ -54,6 +54,7 @@ model User {
   autorizacionesVisita AutorizacionVisita[]
   reportes             Reporte[]
   historialReportes    HistorialReporte[]
+  paquetesRecibidos    Paquete[]
 
   @@map("users")
 }
@@ -101,6 +102,7 @@ model Unidad {
   usuarios       UsuarioUnidad[]
   cuotas         Cuota[]
   autorizaciones AutorizacionVisita[]
+  paquetes       Paquete[]
 
   @@index([torreId])
   @@map("unidad")
@@ -198,6 +200,60 @@ model AutorizacionVisita {
   @@unique([codigo, fechaVisita])
   @@index([residenteId, fechaVisita])
   @@map("autorizacion_visita")
+}
+
+enum Mensajeria {
+  CORREOS
+  DHL
+  FEDEX
+  UPS
+  AMAZON
+  OTRA
+
+  @@map("mensajeria")
+}
+
+// H09 solo crea EN_PORTERIA; RETENIDO lo marca el sistema y ENTREGADO lo hace H10.
+enum EstadoPaquete {
+  EN_PORTERIA
+  RETENIDO
+  ENTREGADO
+
+  @@map("estado_paquete")
+}
+
+// Paquete recibido en portería (H09). No se borra: es la constancia de recepción.
+model Paquete {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "PAQ-000123": sale de la secuencia paquete_codigo_seq (creada en el SQL de la migración).
+  codigoPaquete String @unique @map("codigo_paquete") @db.VarChar(10)
+  // 6 dígitos aleatorios. Solo lo ve el residente; nunca se devuelve a seguridad.
+  codigoRetiro  String @map("codigo_retiro") @db.Char(6)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Nombre que trae la etiqueta (no tiene que ser un usuario).
+  destinatario String     @db.VarChar(60)
+  mensajeria   Mensajeria
+  guia         String?    @db.VarChar(40)
+  // Ruta relativa dentro de UPLOAD_DIR, p. ej. "paquetes/<uuid>.jpg".
+  fotoUrl      String     @map("foto_url") @db.VarChar(255)
+
+  estado     EstadoPaquete @default(EN_PORTERIA)
+  recibidoEn DateTime      @default(now()) @map("recibido_en")
+
+  // Guardia que lo recibió: siempre sale de la sesión.
+  recibidoPorId String @map("recibido_por") @db.Uuid
+  recibidoPor   User   @relation(fields: [recibidoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([estado, recibidoEn])
+  @@index([unidadId, estado])
+  @@map("paquete")
 }
 
 // Área común reservable (H03). No se borra: desactivarla conserva el historial
