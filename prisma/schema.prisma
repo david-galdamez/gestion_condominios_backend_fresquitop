@@ -52,6 +52,8 @@ model User {
   refreshTokens        RefreshToken[]
   unidades             UsuarioUnidad[]
   autorizacionesVisita AutorizacionVisita[]
+  reportes             Reporte[]
+  historialReportes    HistorialReporte[]
 
   @@map("users")
 }
@@ -220,4 +222,99 @@ model AreaComun {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("area_comun")
+}
+
+// ---------------------------------------------------------------------------
+// H05 · Reportes de incidencias y mantenimiento
+// ---------------------------------------------------------------------------
+
+enum CategoriaReporte {
+  FUGA
+  LUMINARIA
+  ASCENSOR
+  LIMPIEZA
+  OTRO
+
+  @@map("categoria_reporte")
+}
+
+enum PrioridadReporte {
+  BAJA
+  MEDIA
+  ALTA
+
+  @@map("prioridad_reporte")
+}
+
+enum EstadoReporte {
+  ABIERTO
+  EN_PROCESO
+  RESUELTO
+
+  @@map("estado_reporte")
+}
+
+// Problema reportado por un residente. Se muestra como REP-000123.
+model Reporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Consecutivo (serial de Postgres); la API lo formatea como "REP-000123".
+  numero Int @unique @default(autoincrement())
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  titulo      String           @db.VarChar(80)
+  categoria   CategoriaReporte
+  // Una torre (tabla `torre`) o un área común de la lista fija del backend.
+  ubicacion   String
+  descripcion String           @db.VarChar(500)
+
+  // Sin criterio de aceptación en H05: queda con valor por defecto.
+  prioridad PrioridadReporte @default(MEDIA)
+  estado    EstadoReporte    @default(ABIERTO)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  evidencias EvidenciaReporte[]
+  historial  HistorialReporte[]
+
+  @@index([residenteId, createdAt])
+  @@map("reporte")
+}
+
+// Foto adjunta a un reporte. `archivo` es la llave de almacenamiento (nombre
+// del archivo en disco), no una URL: la API arma la URL de descarga.
+model EvidenciaReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  archivo     String
+  mimeType    String   @map("mime_type")
+  tamanoBytes Int      @map("tamano_bytes")
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId])
+  @@map("evidencia_reporte")
+}
+
+// Trazabilidad: una fila por cada estado por el que pasa el reporte.
+model HistorialReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  estado EstadoReporte
+
+  cambiadoPorId String @map("cambiado_por_id") @db.Uuid
+  cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId, createdAt])
+  @@map("historial_reporte")
 }
