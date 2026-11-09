@@ -1,7 +1,14 @@
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { EstadoAutorizacion, EstadoCuota, PrismaClient, Rol, TipoDocumento } from '../src/generated/prisma/client.js';
+import {
+  EstadoAutorizacion,
+  EstadoCuota,
+  Mensajeria,
+  PrismaClient,
+  Rol,
+  TipoDocumento,
+} from '../src/generated/prisma/client.js';
 
 /** Mismo cálculo que src/common/fechas (el seed corre fuera de Nest y no usa los alias). */
 const ZONA_NEGOCIO = 'America/El_Salvador';
@@ -51,6 +58,12 @@ const USUARIOS = [
     email: 'admin@example.com',
     nombre: 'Administrador',
     rol: Rol.ADMINISTRADOR,
+    unidades: [] as string[],
+  },
+  {
+    email: 'seguridad@example.com',
+    nombre: 'Guardia de Portería',
+    rol: Rol.SEGURIDAD,
     unidades: [] as string[],
   },
 ];
@@ -145,6 +158,34 @@ async function main() {
       });
     }
   }
+
+  // Paquetes en portería (H09): upsert por código; la foto es de ejemplo (no hay archivo).
+  const guardia = await prisma.user.findUniqueOrThrow({ where: { email: 'seguridad@example.com' } });
+  const paquetesSeed = [
+    { codigo: 'PAQ-000001', unidad: 'A-101', destinatario: 'Residente Uno', mensajeria: Mensajeria.AMAZON, guia: null, retiro: '482915' },
+    { codigo: 'PAQ-000002', unidad: 'A-101', destinatario: 'Ana Martínez', mensajeria: Mensajeria.DHL, guia: '1234567890', retiro: '730264' },
+    { codigo: 'PAQ-000003', unidad: 'B-205', destinatario: 'Residente Uno', mensajeria: Mensajeria.CORREOS, guia: null, retiro: '159037' },
+  ];
+  for (const p of paquetesSeed) {
+    const datos = {
+      unidadId: unidadIds.get(p.unidad)!,
+      destinatario: p.destinatario,
+      mensajeria: p.mensajeria,
+      guia: p.guia,
+      codigoRetiro: p.retiro,
+      fotoUrl: 'paquetes/ejemplo.png',
+      recibidoPorId: guardia.id,
+    };
+    await prisma.paquete.upsert({
+      where: { codigoPaquete: p.codigo },
+      update: datos,
+      create: { ...datos, codigoPaquete: p.codigo },
+    });
+  }
+  // La secuencia sigue después del mayor código existente para no chocar con el seed.
+  await prisma.$executeRawUnsafe(
+    "SELECT setval('paquete_codigo_seq', GREATEST((SELECT COALESCE(MAX(substring(codigo_paquete FROM 5)::int), 0) FROM paquete), 1))",
+  );
 
   // Autorizaciones de visita: fechas relativas a hoy (El Salvador) y códigos
   // fijos, así el upsert por (codigo, fechaVisita) es idempotente el mismo día.
