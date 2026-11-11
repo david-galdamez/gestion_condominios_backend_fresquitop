@@ -13,6 +13,8 @@
       "@Unidades/*": ["./src/unidades/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Accesos": ["./src/accesos/index.ts"],
+      "@Accesos/*": ["./src/accesos/*/index.ts"],
       "@Morosidad": ["./src/morosidad/index.ts"],
       "@Morosidad/*": ["./src/morosidad/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
