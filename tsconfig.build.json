@@ -21,6 +21,16 @@
       "@Prisma/*": ["./src/prisma/*/index.ts"],
       "@Common/*": ["./src/common/*/index.ts"],
       "@Config": ["./src/config/index.ts"],
+      "@Paquetes": ["./src/paquetes/index.ts"],
+      "@Paquetes/*": ["./src/paquetes/*/index.ts"],
+      "@Archivos": ["./src/archivos/index.ts"],
+      "@Archivos/*": ["./src/archivos/*/index.ts"],
+      "@Notificaciones": ["./src/notificaciones/index.ts"],
+      "@Notificaciones/*": ["./src/notificaciones/*/index.ts"],
+      "@Areas": ["./src/areas/index.ts"],
+      "@Areas/*": ["./src/areas/*/index.ts"],
+      "@Reportes": ["./src/reportes/index.ts"],
+      "@Reportes/*": ["./src/reportes/*/index.ts"],
       "@PrismaClient": ["./src/generated/prisma/client.ts"]
     }
   },
