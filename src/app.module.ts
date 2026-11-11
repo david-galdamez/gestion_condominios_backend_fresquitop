@@ -8,6 +8,7 @@ import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
 import { EstadoCuentaModule } from '@EstadoCuenta';
 import { UnidadesModule } from '@Unidades';
 import { AutorizacionesModule } from '@Autorizaciones';
+import { AccesosModule } from '@Accesos';
 import { MorosidadModule } from '@Morosidad';
 import { HealthModule } from '@Health';
 import { PaquetesModule } from '@Paquetes';
@@ -32,6 +33,7 @@ import { validateEnv } from '@Config';
     EstadoCuentaModule,
     UnidadesModule,
     AutorizacionesModule,
+    AccesosModule,
     MorosidadModule,
     AreasModule,     
     ReportesModule,  

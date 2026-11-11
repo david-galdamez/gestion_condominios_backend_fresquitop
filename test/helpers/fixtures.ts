@@ -9,7 +9,7 @@ export const PASSWORD = 'Demo1234!';
 /** Vacía todas las tablas de negocio; CASCADE resuelve el orden de las FK. */
 export async function limpiarTablas(prisma: PrismaService): Promise<void> {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE area_comun, autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
+    'TRUNCATE TABLE registro_acceso, area_comun, autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
   );
 }
 

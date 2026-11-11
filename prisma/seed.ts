@@ -242,6 +242,19 @@ async function main() {
       hora: '18:00',
     },
     {
+      // Vigente para hoy: sirve para probar la entrada con código en portería (H08).
+      email: 'residente1@example.com',
+      unidad: 'A-101',
+      codigo: '100005',
+      dias: 0,
+      estado: EstadoAutorizacion.VIGENTE,
+      nombre: 'Sofía Ramírez',
+      tipo: TipoDocumento.DUI,
+      doc: '05555555-5',
+      placa: null,
+      hora: '16:00',
+    },
+    {
       email: 'residente2@example.com',
       unidad: 'A-102',
       codigo: '200001',

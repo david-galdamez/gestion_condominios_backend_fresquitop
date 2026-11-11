@@ -53,6 +53,8 @@
       "@Areas/*": ["./src/areas/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Accesos": ["./src/accesos/index.ts"],
+      "@Accesos/*": ["./src/accesos/*/index.ts"],
       "@Unidades": ["./src/unidades/index.ts"],
       "@Unidades/*": ["./src/unidades/*/index.ts"],
       "@Morosidad": ["./src/morosidad/index.ts"],
