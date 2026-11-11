@@ -9,6 +9,8 @@
       "@Users/*": ["./src/users/*/index.ts"],
       "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
+      "@Cuotas": ["./src/cuotas/index.ts"],
+      "@Cuotas/*": ["./src/cuotas/*/index.ts"],
       "@Unidades": ["./src/unidades/index.ts"],
       "@Unidades/*": ["./src/unidades/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
