@@ -55,6 +55,8 @@ model User {
   reportes             Reporte[]
   historialReportes    HistorialReporte[]
   paquetesRecibidos    Paquete[]
+  entradasRegistradas  RegistroAcceso[]     @relation("EntradaRegistradaPor")
+  salidasRegistradas   RegistroAcceso[]     @relation("SalidaRegistradaPor")
 
   @@map("users")
 }
@@ -103,6 +105,7 @@ model Unidad {
   cuotas         Cuota[]
   autorizaciones AutorizacionVisita[]
   paquetes       Paquete[]
+  accesos        RegistroAcceso[]
 
   @@index([torreId])
   @@map("unidad")
@@ -193,6 +196,9 @@ model AutorizacionVisita {
   // 6 dígitos; único solo dentro del día de la visita (se reutiliza entre días).
   codigo String             @db.Char(6)
   estado EstadoAutorizacion @default(VIGENTE)
+
+  // Registro de entrada que la usó (H08); a lo sumo uno.
+  acceso RegistroAcceso?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -373,4 +379,56 @@ model HistorialReporte {
 
   @@index([reporteId, createdAt])
   @@map("historial_reporte")
+}
+
+// ---------------------------------------------------------------------------
+// H08 · Registro de entradas y salidas de visitantes
+// ---------------------------------------------------------------------------
+
+enum EstadoAcceso {
+  DENTRO
+  SALIO
+
+  @@map("estado_acceso")
+}
+
+// Una fila por visita: la entrada la crea y la salida se guarda en la misma
+// fila. No se borra: es la bitácora de portería.
+model RegistroAcceso {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Solo si entró con código. UNIQUE: una autorización se usa una vez.
+  autorizacionId String?             @unique @map("autorizacion_id") @db.Uuid
+  autorizacion   AutorizacionVisita? @relation(fields: [autorizacionId], references: [id], onDelete: Restrict)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Copia de los datos del visitante: con código salen de la autorización.
+  nombre          String        @db.VarChar(60)
+  tipoDocumento   TipoDocumento @map("tipo_documento")
+  numeroDocumento String        @map("numero_documento") @db.VarChar(12)
+  // Obligatorio sin pre-autorización (CHECK en el SQL), 5 a 100 caracteres.
+  motivo          String?       @db.VarChar(100)
+  // CHECK (preautorizado = (autorizacion_id IS NOT NULL)) en el SQL.
+  preautorizado   Boolean
+
+  estado      EstadoAcceso @default(DENTRO)
+  horaEntrada DateTime     @default(now()) @map("hora_entrada")
+  // CHECK: hay hora de salida si y solo si estado = SALIO.
+  horaSalida  DateTime?    @map("hora_salida")
+
+  // Guardias: siempre salen de la sesión.
+  entradaPorId String  @map("entrada_por") @db.Uuid
+  entradaPor   User    @relation("EntradaRegistradaPor", fields: [entradaPorId], references: [id], onDelete: Restrict)
+  salidaPorId  String? @map("salida_por") @db.Uuid
+  salidaPor    User?   @relation("SalidaRegistradaPor", fields: [salidaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Visitantes dentro (H25) y búsqueda por documento en portería.
+  @@index([estado, horaEntrada])
+  @@index([numeroDocumento])
+  @@map("registro_acceso")
 }
