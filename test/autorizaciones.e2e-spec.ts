@@ -22,6 +22,10 @@ describe('Autorizaciones de visita (e2e)', () => {
   const cancelar = (token: string | null, id: string) =>
     auth(request(app.getHttpServer()).patch(`${URL}/${id}/cancelar`), token);
 
+  const editar = (token: string | null, id: string, body: object) =>
+    auth(request(app.getHttpServer()).patch(`${URL}/${id}`).send(body), token);
+  const detalle = (token: string | null, id: string) => auth(request(app.getHttpServer()).get(`${URL}/${id}`), token);
+
   const valido = (extra: object = {}) => ({
     nombre: 'María López',
     tipoDocumento: 'DUI',
@@ -249,6 +253,96 @@ describe('Autorizaciones de visita (e2e)', () => {
       const id = '3f0f6b2e-5c1d-4b8e-9a37-0d2f6a1c4e55';
       await cancelar(null, id).expect(401);
       await cancelar(tAdmin, id).expect(403);
+    });
+  });
+
+  describe('PATCH /autorizaciones/:id (H07b)', () => {
+    const vigente = (unidadId: string, residenteId: string, extra: object = {}) =>
+      crearAutorizacion(prisma, {
+        unidadId,
+        residenteId,
+        codigo: '111111',
+        fechaVisita: sumarDias(hoy(), 1),
+        ...extra,
+      });
+
+    it('sin cambiar la fecha: edita nombre, placa, hora y documento y conserva el código', async () => {
+      const { t1, r1, a101 } = await escenario();
+      const a = await vigente(a101.id, r1.id);
+      const res = await editar(t1, a.id, {
+        nombre: 'Pedro Ruiz',
+        placa: 'p999',
+        horaEstimada: '09:45',
+        tipoDocumento: 'PASAPORTE',
+        numeroDocumento: 'ab123456',
+        fechaVisita: sumarDias(hoy(), 1),
+      }).expect(200);
+      expect(res.body).toMatchObject({
+        codigo: '111111',
+        nombre: 'Pedro Ruiz',
+        placa: 'P999',
+        horaEstimada: '09:45',
+        tipoDocumento: 'PASAPORTE',
+        numeroDocumento: 'AB123456',
+        estado: 'VIGENTE',
+        unidad: { codigo: 'A-101' },
+        editadoPor: { id: r1.id },
+      });
+      const fila = await prisma.autorizacionVisita.findUniqueOrThrow({ where: { id: a.id } });
+      expect(fila.editadoPorId).toBe(r1.id);
+      expect(fila.updatedAt.getTime()).toBeGreaterThan(a.updatedAt.getTime());
+    });
+
+    it('al cambiar la fecha genera un código nuevo y el anterior deja de existir', async () => {
+      const { t1, r1, a101 } = await escenario();
+      const a = await vigente(a101.id, r1.id);
+      const res = await editar(t1, a.id, { fechaVisita: sumarDias(hoy(), 5) }).expect(200);
+      expect(res.body.fechaVisita).toBe(sumarDias(hoy(), 5));
+      expect(res.body.codigo).toMatch(/^\d{6}$/);
+      expect(await prisma.autorizacionVisita.count({ where: { codigo: '111111' } })).toBe(0);
+    });
+
+    it('fecha fuera de rango y documento inválido -> 400 con los mensajes de H07', async () => {
+      const { t1, r1, a101 } = await escenario();
+      const a = await vigente(a101.id, r1.id);
+      let res = await editar(t1, a.id, { fechaVisita: sumarDias(hoy(), 31) }).expect(400);
+      expect(res.body.message).toContain(MSG_FECHA);
+      res = await editar(t1, a.id, { tipoDocumento: 'DUI', numeroDocumento: '123' }).expect(400);
+      expect(res.body.message).toContain(MSG_DOC);
+    });
+
+    it('la unidad no se puede cambiar (400)', async () => {
+      const { t2, r2, a102, b205 } = await escenario();
+      const a = await vigente(a102.id, r2.id);
+      await editar(t2, a.id, { unidadId: b205.id }).expect(400);
+    });
+
+    it.each([EstadoAutorizacion.USADA, EstadoAutorizacion.CANCELADA, EstadoAutorizacion.VENCIDA])(
+      '%s -> 409 Esta autorización ya no se puede editar',
+      async (estado) => {
+        const { t1, r1, a101 } = await escenario();
+        const a = await vigente(a101.id, r1.id, { estado });
+        const res = await editar(t1, a.id, { nombre: 'Pedro' }).expect(409);
+        expect(res.body.message).toBe('Esta autorización ya no se puede editar');
+      },
+    );
+
+    it('ajena -> 404; otro rol -> 403; sin token -> 401', async () => {
+      const { t2, tAdmin, r1, a101 } = await escenario();
+      const a = await vigente(a101.id, r1.id);
+      const res = await editar(t2, a.id, { nombre: 'Pedro' }).expect(404);
+      expect(res.body.message).toBe('La autorización no existe');
+      const rol = await editar(tAdmin, a.id, { nombre: 'Pedro' }).expect(403);
+      expect(rol.body.message).toBe('No tienes permiso para esta acción');
+      await editar(null, a.id, { nombre: 'Pedro' }).expect(401);
+    });
+
+    it('GET /:id devuelve la propia y 404 la ajena', async () => {
+      const { t1, t2, r1, a101 } = await escenario();
+      const a = await vigente(a101.id, r1.id);
+      const res = await detalle(t1, a.id).expect(200);
+      expect(res.body).toMatchObject({ id: a.id, editadoPor: null });
+      await detalle(t2, a.id).expect(404);
     });
   });
 

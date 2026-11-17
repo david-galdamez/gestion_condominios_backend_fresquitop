@@ -49,12 +49,13 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens        RefreshToken[]
-  unidades             UsuarioUnidad[]
-  autorizacionesVisita AutorizacionVisita[]
-  reportes             Reporte[]
-  historialReportes    HistorialReporte[]
-  paquetesRecibidos    Paquete[]
+  refreshTokens          RefreshToken[]
+  unidades               UsuarioUnidad[]
+  autorizacionesVisita   AutorizacionVisita[] @relation("AutorizacionResidente")
+  autorizacionesEditadas AutorizacionVisita[] @relation("AutorizacionEditadaPor")
+  reportes               Reporte[]
+  historialReportes      HistorialReporte[]
+  paquetesRecibidos      Paquete[]
 
   @@map("users")
 }
@@ -179,7 +180,7 @@ model AutorizacionVisita {
 
   // Siempre sale de la sesión, nunca del cliente.
   residenteId String @map("residente_id") @db.Uuid
-  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+  residente   User   @relation("AutorizacionResidente", fields: [residenteId], references: [id], onDelete: Restrict)
 
   nombre          String        @db.VarChar(60)
   tipoDocumento   TipoDocumento @map("tipo_documento")
@@ -193,6 +194,10 @@ model AutorizacionVisita {
   // 6 dígitos; único solo dentro del día de la visita (se reutiliza entre días).
   codigo String             @db.Char(6)
   estado EstadoAutorizacion @default(VIGENTE)
+
+  // H07b: último residente que la editó (null si nunca se editó). El cuándo es updated_at.
+  editadoPorId String? @map("editado_por_id") @db.Uuid
+  editadoPor   User?   @relation("AutorizacionEditadaPor", fields: [editadoPorId], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

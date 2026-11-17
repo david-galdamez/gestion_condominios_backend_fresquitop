@@ -4,6 +4,7 @@ import { EstadoAutorizacion, type Prisma } from '@PrismaClient';
 
 const INCLUIR_UNIDAD = {
   unidad: { select: { id: true, codigo: true } },
+  editadoPor: { select: { id: true, nombre: true } },
 } satisfies Prisma.AutorizacionVisitaInclude;
 
 export type AutorizacionConUnidad = Prisma.AutorizacionVisitaGetPayload<{
@@ -21,6 +22,13 @@ export type NuevaAutorizacion = Pick<
   | 'fechaVisita'
   | 'horaEstimada'
   | 'codigo'
+>;
+
+export type CambiosAutorizacion = Partial<
+  Pick<
+    Prisma.AutorizacionVisitaUncheckedUpdateManyInput,
+    'nombre' | 'tipoDocumento' | 'numeroDocumento' | 'placa' | 'fechaVisita' | 'horaEstimada' | 'codigo'
+  >
 >;
 
 /** Único punto que habla con `autorizacion_visita`. Sin borrado físico. */
@@ -59,6 +67,19 @@ export class AutorizacionRepository {
     const { count } = await this.prisma.autorizacionVisita.updateMany({
       where: { id, residenteId, estado: EstadoAutorizacion.VIGENTE },
       data: { estado: EstadoAutorizacion.CANCELADA },
+    });
+    return count;
+  }
+
+  /**
+   * H07b: aplica la edición solo si sigue VIGENTE y es del residente, en una
+   * sentencia (misma razón que cancelar). Si cambia el código y choca con otro
+   * del mismo día, Prisma lanza P2002 y el servicio reintenta.
+   */
+  async editarSiVigente(id: string, residenteId: string, data: CambiosAutorizacion): Promise<number> {
+    const { count } = await this.prisma.autorizacionVisita.updateMany({
+      where: { id, residenteId, estado: EstadoAutorizacion.VIGENTE },
+      data: { ...data, editadoPorId: residenteId },
     });
     return count;
   }
