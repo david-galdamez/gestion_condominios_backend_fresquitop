@@ -65,7 +65,9 @@
       "@Config": ["./src/config/index.ts"],
       "@PrismaClient": ["./src/generated/prisma/client.ts"],
       "@Reportes": ["./src/reportes/index.ts"],
-      "@Reportes/*": ["./src/reportes/*/index.ts"]
+      "@Reportes/*": ["./src/reportes/*/index.ts"],
+      "@Comunicados": ["./src/comunicados/index.ts"],
+      "@Comunicados/*": ["./src/comunicados/*/index.ts"]
     }
   }
 }

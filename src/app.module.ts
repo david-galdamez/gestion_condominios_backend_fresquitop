@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AreasModule } from '@Areas';
 import { AuthModule } from '@Auth';
+import { ComunicadosModule } from '@Comunicados';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
 import { EstadoCuentaModule } from '@EstadoCuenta';
 import { UnidadesModule } from '@Unidades';
@@ -35,6 +36,7 @@ import { validateEnv } from '@Config';
     MorosidadModule,
     AreasModule,     
     ReportesModule,  
+    ComunicadosModule,
   ],
   providers: [
     {

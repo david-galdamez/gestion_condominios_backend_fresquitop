@@ -30,6 +30,11 @@ export class UnidadRepository {
     });
   }
 
+  /** Todas las torres por nombre (destinatarios de comunicados, H13). */
+  findTorres(): Promise<{ id: string; nombre: string }[]> {
+    return this.prisma.torre.findMany({ select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
+  }
+
   findById(id: string): Promise<(UnidadResumen & { activa: boolean }) | null> {
     return this.prisma.unidad.findUnique({
       where: { id },
