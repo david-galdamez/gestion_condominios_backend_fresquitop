@@ -59,6 +59,7 @@ model User {
   salidasRegistradas   RegistroAcceso[]      @relation("SalidaRegistradaPor")
   configuracionesCuota ConfiguracionCuota[]
   generacionesCuota    EjecucionGeneracion[]
+  perfilDirectorio     PerfilDirectorio?
 
   @@map("users")
 }
@@ -507,4 +508,24 @@ model AvisoCuota {
 
   @@unique([cuotaId, tipo])
   @@map("aviso_cuota")
+}
+
+// Privacidad del residente en el directorio (H15). Oculto por defecto; se crea
+// junto con el usuario al registrarse. H16 lo usa para buscar: solo perfiles
+// visibles, y los datos no marcados se devuelven como null.
+model PerfilDirectorio {
+  residenteId String @id @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  // CHECK (visible solo con al menos un dato marcado) agregado a mano en el SQL de la migración.
+  visible         Boolean @default(false)
+  mostrarNombre   Boolean @default(false) @map("mostrar_nombre")
+  mostrarUnidad   Boolean @default(false) @map("mostrar_unidad")
+  mostrarTelefono Boolean @default(false) @map("mostrar_telefono")
+  mostrarCorreo   Boolean @default(false) @map("mostrar_correo")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("perfil_directorio")
 }

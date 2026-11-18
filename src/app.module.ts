@@ -13,6 +13,7 @@ import { AccesosModule } from '@Accesos';
 import { MorosidadModule } from '@Morosidad';
 import { HealthModule } from '@Health';
 import { PaquetesModule } from '@Paquetes';
+import { PerfilDirectorioModule } from '@PerfilDirectorio';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
@@ -30,6 +31,7 @@ import { validateEnv } from '@Config';
     HealthModule,
     UsersModule,
     PaquetesModule,
+    PerfilDirectorioModule,
     AuthModule,
     EstadoCuentaModule,
     CuotasModule,
