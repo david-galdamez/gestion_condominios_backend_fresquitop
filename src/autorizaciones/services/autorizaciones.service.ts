@@ -8,13 +8,22 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { aFechaUtc } from '@Common/fechas';
-import { AutorizacionRepository, type AutorizacionConUnidad } from '@Autorizaciones/repositories';
-import type { AutorizacionDto, CrearAutorizacionDto } from '@Autorizaciones/dto';
+import {
+  AutorizacionRepository,
+  type AutorizacionConUnidad,
+  type CambiosAutorizacion,
+} from '@Autorizaciones/repositories';
+import type { AutorizacionDto, CrearAutorizacionDto, EditarAutorizacionDto } from '@Autorizaciones/dto';
 import { UnidadRepository } from '@Unidades/repositories';
 import { Prisma } from '@PrismaClient';
 
 /** Intentos de generar un código antes de rendirse (colisión en UNIQUE codigo+fecha). */
 export const MAX_INTENTOS_CODIGO = 5;
+
+export const MSG_NO_EXISTE = 'La autorización no existe';
+export const MSG_NO_EDITABLE = 'Esta autorización ya no se puede editar';
+
+const nuevoCodigo = () => String(randomInt(0, 1_000_000)).padStart(6, '0');
 
 const esColisionUnica = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
 
@@ -34,6 +43,8 @@ export function aDto(a: AutorizacionConUnidad): AutorizacionDto {
     horaEstimada: a.horaEstimada.toISOString().slice(11, 16),
     estado: a.estado,
     unidad: { id: a.unidad.id, codigo: a.unidad.codigo },
+    editadoPor: a.editadoPor ? { id: a.editadoPor.id, nombre: a.editadoPor.nombre } : null,
+    actualizadoEn: a.updatedAt.toISOString(),
   };
 }
 
@@ -60,7 +71,7 @@ export class AutorizacionesService {
     // El código es aleatorio y solo es único por día: si choca se prueba otro
     // en vez de consultar antes (consultar primero tendría carrera igual).
     for (let intento = 0; intento < MAX_INTENTOS_CODIGO; intento++) {
-      const codigo = String(randomInt(0, 1_000_000)).padStart(6, '0');
+      const codigo = nuevoCodigo();
       try {
         return aDto(await this.autorizaciones.create({ ...datos, codigo }));
       } catch (e) {
@@ -77,7 +88,7 @@ export class AutorizacionesService {
 
   async cancelar(id: string, residenteId: string): Promise<AutorizacionDto> {
     const actual = await this.autorizaciones.findOneDeResidente(id, residenteId);
-    if (!actual) throw new NotFoundException('La autorización no existe');
+    if (!actual) throw new NotFoundException(MSG_NO_EXISTE);
     if (actual.estado !== 'VIGENTE') throw new ConflictException('Esta autorización ya no se puede cancelar');
 
     // Si otra petición ganó la carrera entre el find y el update, count es 0.
@@ -85,6 +96,56 @@ export class AutorizacionesService {
     if (count === 0) throw new ConflictException('Esta autorización ya no se puede cancelar');
 
     return aDto({ ...actual, estado: 'CANCELADA' });
+  }
+
+  async obtener(id: string, residenteId: string): Promise<AutorizacionDto> {
+    const a = await this.autorizaciones.findOneDeResidente(id, residenteId);
+    if (!a) throw new NotFoundException(MSG_NO_EXISTE);
+    return aDto(a);
+  }
+
+  /**
+   * H07b. Solo la Vigente propia. Si cambia la fecha se genera un código nuevo
+   * (el anterior deja de existir); si no, se conserva. La unidad nunca cambia.
+   */
+  async editar(id: string, residenteId: string, dto: EditarAutorizacionDto): Promise<AutorizacionDto> {
+    const actual = await this.autorizaciones.findOneDeResidente(id, residenteId);
+    if (!actual) throw new NotFoundException(MSG_NO_EXISTE);
+    if (actual.estado !== 'VIGENTE') throw new ConflictException(MSG_NO_EDITABLE);
+
+    const cambios: CambiosAutorizacion = {};
+    if (dto.nombre !== undefined) cambios.nombre = dto.nombre;
+    if (dto.tipoDocumento !== undefined) cambios.tipoDocumento = dto.tipoDocumento;
+    if (dto.numeroDocumento !== undefined) cambios.numeroDocumento = dto.numeroDocumento;
+    if (dto.placa !== undefined) cambios.placa = dto.placa;
+    if (dto.horaEstimada !== undefined) cambios.horaEstimada = aHoraUtc(dto.horaEstimada);
+
+    const cambiaFecha =
+      dto.fechaVisita !== undefined && dto.fechaVisita !== actual.fechaVisita.toISOString().slice(0, 10);
+
+    let count: number | undefined;
+    if (!cambiaFecha) {
+      count = await this.autorizaciones.editarSiVigente(id, residenteId, cambios);
+    } else {
+      cambios.fechaVisita = aFechaUtc(dto.fechaVisita!);
+      for (let intento = 0; intento < MAX_INTENTOS_CODIGO && count === undefined; intento++) {
+        try {
+          count = await this.autorizaciones.editarSiVigente(id, residenteId, { ...cambios, codigo: nuevoCodigo() });
+        } catch (e) {
+          if (!esColisionUnica(e)) throw e;
+        }
+      }
+      if (count === undefined) {
+        throw new ServiceUnavailableException('No se pudo generar un código de acceso único, intenta de nuevo');
+      }
+    }
+
+    // Otra petición (cancelar, vencimiento) ganó la carrera entre el find y el update.
+    if (count === 0) throw new ConflictException(MSG_NO_EDITABLE);
+
+    const editada = await this.autorizaciones.findOneDeResidente(id, residenteId);
+    if (!editada) throw new NotFoundException(MSG_NO_EXISTE);
+    return aDto(editada);
   }
 
   /** Unidad ajena/inexistente -> 403 (no revela qué ids existen). Sin unidadId: solo se infiere si hay una. */

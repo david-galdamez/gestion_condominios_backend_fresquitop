@@ -35,8 +35,10 @@ import { validateEnv } from '@Config';
     EstadoCuentaModule,
     CuotasModule,
     UnidadesModule,
-    AutorizacionesModule,
+    // Antes que AutorizacionesModule: GET /autorizaciones/buscar (H08) debe
+    // registrarse antes que GET /autorizaciones/:id (H07b) o lo captura el :id.
     AccesosModule,
+    AutorizacionesModule,
     MorosidadModule,
     AreasModule,     
     ReportesModule,  

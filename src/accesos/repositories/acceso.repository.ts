@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
-import type { AutorizacionConUnidad } from '@Autorizaciones/repositories';
+import { INCLUIR_UNIDAD as INCLUIR_AUTORIZACION, type AutorizacionConUnidad } from '@Autorizaciones/repositories';
 import { EstadoAcceso, EstadoAutorizacion, type Prisma, type TipoDocumento } from '@PrismaClient';
 
 const INCLUIR_UNIDAD = { unidad: { select: { id: true, codigo: true } } } as const;
@@ -111,7 +111,7 @@ export class AccesoRepository {
   findAutorizacionesDeHoy(q: string, hoy: Date): Promise<AutorizacionConUnidad[]> {
     return this.prisma.autorizacionVisita.findMany({
       where: { fechaVisita: hoy, OR: [{ codigo: q }, { numeroDocumento: q }] },
-      include: INCLUIR_UNIDAD,
+      include: INCLUIR_AUTORIZACION,
       orderBy: { horaEstimada: 'asc' },
     });
   }
