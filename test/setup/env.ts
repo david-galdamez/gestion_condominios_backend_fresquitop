@@ -9,3 +9,6 @@ config({ path: '.env.test', quiet: true });
 
 // Las fotos de los e2e van a una carpeta temporal, no a uploads/ del proyecto.
 process.env.UPLOAD_DIR ??= join(tmpdir(), 'condominios-e2e-uploads');
+
+// La pasarela simulada espera 2 s por pago (H21); en los e2e se responde al instante.
+process.env.PASARELA_ESPERA_MS ??= '0';
