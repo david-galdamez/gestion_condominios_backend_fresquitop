@@ -41,7 +41,7 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
 | H07 | Pre-autorizar a un visitante | David Galdamez | [card](https://trello.com/c/gczn8vll) | [BE #4](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/4), [FE #4](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/4) | En develop |
-| H07b | Editar una autorización de visita | David Galdamez | [card](https://trello.com/c/HHeyUT65) | Rama `feature/H07b-editar-autorizacion` (PR por abrir) | En revisión |
+| H07b | Editar una autorización de visita | David Galdamez | [card](https://trello.com/c/HHeyUT65) | [BE #11](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/11), [FE #13](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/13) | En revisión |
 | H08 | Registrar entradas y salidas de visitantes | Pablo Castellón | [card](https://trello.com/c/pYKhBeSC) | — | Pendiente: aún en desarrollo por el responsable |
 | H25 | Ver quién está dentro del condominio como visita | Edwin Guzmán | [card](https://trello.com/c/HRnOJClp) | [FE #6](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/6) | Parcial: solo frontend, falta backend (depende de H08) |
 
@@ -65,7 +65,7 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
-| H13 | Publicar un comunicado para todos o para una torre | David Galdamez | [card](https://trello.com/c/Z8275TmM) | Rama `feature/H13-publicar-comunicados` (PR por abrir) | En revisión (el aviso usa el servicio temporal de notificaciones hasta H18) |
+| H13 | Publicar un comunicado para todos o para una torre | David Galdamez | [card](https://trello.com/c/Z8275TmM) | [BE #12](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/12), [FE #14](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/14) | En revisión (el aviso usa el servicio temporal de notificaciones hasta H18) |
 | H14 | Ver solo los comunicados que me aplican | Pablo Castellón | [card](https://trello.com/c/HjoPHQAB) | — | Pendiente: depende de H13 |
 
 ## Módulo 8: Directorio de residentes
