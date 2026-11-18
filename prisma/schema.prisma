@@ -59,6 +59,7 @@ model User {
   salidasRegistradas   RegistroAcceso[]      @relation("SalidaRegistradaPor")
   configuracionesCuota ConfiguracionCuota[]
   generacionesCuota    EjecucionGeneracion[]
+  comunicados          Comunicado[]
 
   @@map("users")
 }
@@ -87,7 +88,8 @@ model Torre {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  unidades Unidad[]
+  unidades    Unidad[]
+  comunicados ComunicadoDestino[]
 
   @@map("torre")
 }
@@ -507,4 +509,67 @@ model AvisoCuota {
 
   @@unique([cuotaId, tipo])
   @@map("aviso_cuota")
+}
+
+// ---------------------------------------------------------------------------
+// H13 · Comunicados
+// ---------------------------------------------------------------------------
+
+enum CategoriaComunicado {
+  AGUA
+  ELECTRICIDAD
+  MANTENIMIENTO
+  SEGURIDAD
+  AVISO_GENERAL
+
+  @@map("categoria_comunicado")
+}
+
+// PROGRAMADO -> PUBLICADO (tarea cada 5 min) -> EXPIRADO (si tiene expiración).
+enum EstadoComunicado {
+  PROGRAMADO
+  PUBLICADO
+  EXPIRADO
+
+  @@map("estado_comunicado")
+}
+
+// Comunicado del administrador. CHECK (fecha_expiracion > fecha_publicacion)
+// agregado a mano en el SQL de la migración. H14 usa fecha_expiracion.
+model Comunicado {
+  id        String              @id @default(uuid()) @db.Uuid
+  titulo    String              @db.VarChar(100)
+  contenido String              @db.VarChar(2000)
+  categoria CategoriaComunicado
+
+  // true = todo el condominio (sin filas en comunicado_destino).
+  paraTodos Boolean @map("para_todos")
+
+  fechaPublicacion DateTime         @map("fecha_publicacion")
+  fechaExpiracion  DateTime?        @map("fecha_expiracion")
+  estado           EstadoComunicado
+
+  autorId String @map("autor_id") @db.Uuid
+  autor   User   @relation(fields: [autorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  destinos ComunicadoDestino[]
+
+  @@index([estado, fechaPublicacion])
+  @@map("comunicado")
+}
+
+// Torres destino de un comunicado que no es para todos.
+model ComunicadoDestino {
+  comunicadoId String     @map("comunicado_id") @db.Uuid
+  comunicado   Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+
+  torreId String @map("torre_id") @db.Uuid
+  torre   Torre  @relation(fields: [torreId], references: [id], onDelete: Restrict)
+
+  @@id([comunicadoId, torreId])
+  @@index([torreId])
+  @@map("comunicado_destino")
 }
