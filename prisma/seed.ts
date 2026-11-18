@@ -159,6 +159,14 @@ async function main() {
     }
   }
 
+  // Configuración de cuota (H02): solo si no hay ninguna, para no sumar historial en cada corrida.
+  const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@example.com' } });
+  if ((await prisma.configuracionCuota.count()) === 0) {
+    await prisma.configuracionCuota.create({
+      data: { montoMensual: 45, diaVencimiento: 10, creadaPorId: admin.id },
+    });
+  }
+
   // Paquetes en portería (H09): upsert por código; la foto es de ejemplo (no hay archivo).
   const guardia = await prisma.user.findUniqueOrThrow({ where: { email: 'seguridad@example.com' } });
   const paquetesSeed = [
@@ -240,6 +248,19 @@ async function main() {
       doc: '03333333-3',
       placa: 'P987-654',
       hora: '18:00',
+    },
+    {
+      // Vigente para hoy: sirve para probar la entrada con código en portería (H08).
+      email: 'residente1@example.com',
+      unidad: 'A-101',
+      codigo: '100005',
+      dias: 0,
+      estado: EstadoAutorizacion.VIGENTE,
+      nombre: 'Sofía Ramírez',
+      tipo: TipoDocumento.DUI,
+      doc: '05555555-5',
+      placa: null,
+      hora: '16:00',
     },
     {
       email: 'residente2@example.com',

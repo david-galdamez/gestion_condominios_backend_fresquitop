@@ -5,9 +5,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { AreasModule } from '@Areas';
 import { AuthModule } from '@Auth';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
+import { CuotasModule } from '@Cuotas';
 import { EstadoCuentaModule } from '@EstadoCuenta';
 import { UnidadesModule } from '@Unidades';
 import { AutorizacionesModule } from '@Autorizaciones';
+import { AccesosModule } from '@Accesos';
 import { MorosidadModule } from '@Morosidad';
 import { HealthModule } from '@Health';
 import { PaquetesModule } from '@Paquetes';
@@ -30,7 +32,11 @@ import { validateEnv } from '@Config';
     PaquetesModule,
     AuthModule,
     EstadoCuentaModule,
+    CuotasModule,
     UnidadesModule,
+    // Antes que AutorizacionesModule: GET /autorizaciones/buscar (H08) debe
+    // registrarse antes que GET /autorizaciones/:id (H07b) o lo captura el :id.
+    AccesosModule,
     AutorizacionesModule,
     MorosidadModule,
     AreasModule,     

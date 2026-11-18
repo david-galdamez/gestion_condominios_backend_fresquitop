@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import { EstadoAutorizacion, type Prisma } from '@PrismaClient';
 
-const INCLUIR_UNIDAD = {
+/** Relaciones que necesita `aDto`; la reutiliza la búsqueda de portería (H08). */
+export const INCLUIR_UNIDAD = {
   unidad: { select: { id: true, codigo: true } },
   editadoPor: { select: { id: true, nombre: true } },
 } satisfies Prisma.AutorizacionVisitaInclude;
