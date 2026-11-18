@@ -21,12 +21,12 @@ export const MAX_DIAS_ANTICIPACION = 30;
 
 const DUI = /^\d{8}-\d$/;
 const PASAPORTE = /^[A-Z0-9]{6,12}$/;
-const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const aTexto = (value: unknown) => (typeof value === 'string' ? value.trim() : value);
+export const aTexto = (value: unknown) => (typeof value === 'string' ? value.trim() : value);
 
 /** El formato válido depende del tipo de documento, por eso mira otra propiedad del DTO. */
-function DocumentoSegunTipo(message: string) {
+export function DocumentoSegunTipo(message: string) {
   return (target: object, propertyName: string) =>
     registerDecorator({
       name: 'documentoSegunTipo',
