@@ -360,6 +360,29 @@ async function main() {
     });
   }
 
+  // Perfil de directorio (H15): Residente Uno visible con nombre y unidad;
+  // Residente Dos oculto (estado por defecto). Los demás no tienen fila y se
+  // ven ocultos hasta que guarden su configuración.
+  const perfilesSeed = [
+    { email: 'residente1@example.com', visible: true, mostrarNombre: true, mostrarUnidad: true },
+    { email: 'residente2@example.com', visible: false, mostrarNombre: false, mostrarUnidad: false },
+  ];
+  for (const p of perfilesSeed) {
+    const residenteId = (await prisma.user.findUniqueOrThrow({ where: { email: p.email } })).id;
+    const datos = {
+      visible: p.visible,
+      mostrarNombre: p.mostrarNombre,
+      mostrarUnidad: p.mostrarUnidad,
+      mostrarTelefono: false,
+      mostrarCorreo: false,
+    };
+    await prisma.perfilDirectorio.upsert({
+      where: { residenteId },
+      update: datos,
+      create: { residenteId, ...datos },
+    });
+  }
+
   console.log('Seed listo. Credenciales (contraseña común: ' + PASSWORD + '):');
   for (const { email, rol, unidades } of USUARIOS) {
     console.log(`  ${email}  [${rol}]  unidades: ${unidades.join(', ') || '-'}`);

@@ -53,6 +53,8 @@
       "@Cuotas/*": ["./src/cuotas/*/index.ts"],
       "@Areas": ["./src/areas/index.ts"],
       "@Areas/*": ["./src/areas/*/index.ts"],
+      "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
+      "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
       "@Accesos": ["./src/accesos/index.ts"],

@@ -33,6 +33,8 @@
       "@Notificaciones/*": ["./src/notificaciones/*/index.ts"],
       "@Areas": ["./src/areas/index.ts"],
       "@Areas/*": ["./src/areas/*/index.ts"],
+      "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
+      "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
       "@Reportes": ["./src/reportes/index.ts"],
       "@Reportes/*": ["./src/reportes/*/index.ts"],
       "@Comunicados": ["./src/comunicados/index.ts"],

@@ -36,7 +36,14 @@ export class UserRepository {
   async create({ email, passwordHash, nombre }: CreateUserData): Promise<User> {
     try {
       return await this.prisma.user.create({
-        data: { email: this.normalizeEmail(email), passwordHash, nombre },
+        data: {
+          email: this.normalizeEmail(email),
+          passwordHash,
+          nombre,
+          // H15 (BE-15.2): todo residente nace oculto en el directorio. Va en el
+          // mismo insert anidado, así que es atómico con la creación del usuario.
+          perfilDirectorio: { create: {} },
+        },
       });
     } catch (error) {
       if (
