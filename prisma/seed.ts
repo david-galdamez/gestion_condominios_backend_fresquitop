@@ -2,7 +2,9 @@ import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
+  CategoriaComunicado,
   EstadoAutorizacion,
+  EstadoComunicado,
   EstadoCuota,
   Mensajeria,
   PrismaClient,
@@ -312,6 +314,49 @@ async function main() {
       where: { nombre: a.nombre },
       update: datos,
       create: { nombre: a.nombre, ...datos },
+    });
+  }
+
+  // Comunicados (H13): se borran y recrean por título para que sea idempotente.
+  const hora = (dias: number, hh: string) => new Date(`${sumarDias(hoyEnZonaNegocio(), dias)}T${hh}:00-06:00`);
+  const comunicadosSeed = [
+    {
+      titulo: 'Corte de agua programado',
+      contenido: 'El sábado no habrá servicio de agua de 8:00 a 12:00 por mantenimiento de la cisterna.',
+      categoria: CategoriaComunicado.AGUA,
+      torres: [] as string[],
+      fechaPublicacion: hora(-1, '09:00'),
+      fechaExpiracion: hora(5, '12:00'),
+      estado: EstadoComunicado.PUBLICADO,
+    },
+    {
+      titulo: 'Mantenimiento de ascensor Torre B',
+      contenido: 'El ascensor de la Torre B estará fuera de servicio el lunes de 9:00 a 15:00.',
+      categoria: CategoriaComunicado.MANTENIMIENTO,
+      torres: ['Torre B'],
+      fechaPublicacion: hora(2, '08:00'),
+      fechaExpiracion: null,
+      estado: EstadoComunicado.PROGRAMADO,
+    },
+    {
+      titulo: 'Simulacro de evacuación',
+      contenido: 'Gracias por participar en el simulacro de evacuación del mes pasado.',
+      categoria: CategoriaComunicado.SEGURIDAD,
+      torres: ['Torre A'],
+      fechaPublicacion: hora(-20, '10:00'),
+      fechaExpiracion: hora(-10, '10:00'),
+      estado: EstadoComunicado.EXPIRADO,
+    },
+  ];
+  await prisma.comunicado.deleteMany({ where: { titulo: { in: comunicadosSeed.map((c) => c.titulo) } } });
+  for (const { torres, ...c } of comunicadosSeed) {
+    await prisma.comunicado.create({
+      data: {
+        ...c,
+        paraTodos: torres.length === 0,
+        autorId: admin.id,
+        destinos: { create: torres.map((t) => ({ torreId: torreIds.get(t)! })) },
+      },
     });
   }
 

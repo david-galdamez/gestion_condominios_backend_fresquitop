@@ -7,3 +7,11 @@ export class UnidadResumenDto {
   @ApiProperty({ example: 'A-101' })
   codigo!: string;
 }
+
+export class TorreDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Torre A' })
+  nombre!: string;
+}
