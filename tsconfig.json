@@ -55,6 +55,8 @@
       "@Areas/*": ["./src/areas/*/index.ts"],
       "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
       "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
+      "@Pagos": ["./src/pagos/index.ts"],
+      "@Pagos/*": ["./src/pagos/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
       "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
       "@Accesos": ["./src/accesos/index.ts"],

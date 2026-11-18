@@ -62,6 +62,7 @@ model User {
   generacionesCuota      EjecucionGeneracion[]
   comunicados            Comunicado[]
   perfilDirectorio       PerfilDirectorio?
+  pagos                  Pago[]
 
   @@map("users")
 }
@@ -112,6 +113,7 @@ model Unidad {
   autorizaciones AutorizacionVisita[]
   paquetes       Paquete[]
   accesos        RegistroAcceso[]
+  pagos          Pago[]
 
   @@index([torreId])
   @@map("unidad")
@@ -155,6 +157,7 @@ model Cuota {
   estado           EstadoCuota  @default(PENDIENTE)
   pagadaEn         DateTime?    @map("pagada_en")
   avisos           AvisoCuota[]
+  pago             PagoCuota?
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
@@ -598,4 +601,58 @@ model PerfilDirectorio {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("perfil_directorio")
+}
+
+enum EstadoPago {
+  APROBADO
+  RECHAZADO
+
+  @@map("estado_pago")
+}
+
+// Pago con tarjeta de una o varias cuotas de una misma unidad (H21). No se
+// borra: es historial contable. Nunca guarda el número completo ni el CVV.
+model Pago {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "TX-AAAAMMDD-000123" (secuencia pago_transaccion_seq en el SQL). Solo los aprobados.
+  numeroTransaccion String? @unique @map("numero_transaccion") @db.VarChar(20)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Siempre sale de la sesión.
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  // CHECK (monto > 0) y CHECK de estado/número/motivo en el SQL de la migración.
+  monto    Decimal    @db.Decimal(10, 2)
+  estado   EstadoPago
+  motivo   String?    @db.VarChar(100)
+  ultimos4 String     @db.Char(4)
+  titular  String     @db.VarChar(60)
+
+  // Idempotency-Key del frontend: la misma clave devuelve el pago original sin cobrar.
+  idempotencyKey String @unique @map("idempotency_key") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cuotas PagoCuota[]
+
+  @@index([unidadId, createdAt])
+  @@map("pago")
+}
+
+// Cuotas cubiertas por un pago aprobado. cuota_id único: una cuota no se paga dos veces.
+model PagoCuota {
+  pagoId String @map("pago_id") @db.Uuid
+  pago   Pago   @relation(fields: [pagoId], references: [id], onDelete: Restrict)
+
+  cuotaId String @unique @map("cuota_id") @db.Uuid
+  cuota   Cuota  @relation(fields: [cuotaId], references: [id], onDelete: Restrict)
+
+  monto Decimal @db.Decimal(10, 2)
+
+  @@id([pagoId, cuotaId])
+  @@map("pago_cuota")
 }
