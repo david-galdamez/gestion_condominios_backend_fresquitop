@@ -295,6 +295,10 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 | `POST` | `/auth/refresh` | — | `200` | Renueva el par de tokens |
 | `POST` | `/auth/logout` | — | `204` | Cierra la sesión |
 | `GET` | `/auth/me` | Bearer | `200` | Usuario autenticado |
+| `POST` | `/accesos/entrada` | Bearer · SEGURIDAD | `201` | Registra la entrada con `{ codigo }` o sin pre-autorización (nombre, documento, unidad y motivo) |
+| `PATCH` | `/accesos/:id/salida` | Bearer · SEGURIDAD | `200` | Registra la salida en el mismo registro (`409` si ya salió) |
+| `GET` | `/accesos/buscar?q=` | Bearer · SEGURIDAD | `200` | Visitantes dentro por documento o por el código con que entraron |
+| `GET` | `/autorizaciones/buscar?q=` | Bearer · SEGURIDAD | `200` | Autorizaciones de hoy por código o documento |
 | `GET` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Configuración de cuota vigente (`404` si no existe) |
 | `PUT` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Guarda monto mensual (1.00–9,999.99) y día de vencimiento (1–28) |
 | `POST` | `/cuotas/generar` | Bearer · ADMINISTRADOR | `201` | Genera las cuotas de un periodo `AAAA-MM` para las unidades activas (idempotente) |
