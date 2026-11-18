@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AreasModule } from '@Areas';
 import { AuthModule } from '@Auth';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
+import { CuotasModule } from '@Cuotas';
 import { EstadoCuentaModule } from '@EstadoCuenta';
 import { UnidadesModule } from '@Unidades';
 import { AutorizacionesModule } from '@Autorizaciones';
@@ -30,6 +31,7 @@ import { validateEnv } from '@Config';
     PaquetesModule,
     AuthModule,
     EstadoCuentaModule,
+    CuotasModule,
     UnidadesModule,
     AutorizacionesModule,
     MorosidadModule,

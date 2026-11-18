@@ -55,6 +55,8 @@ model User {
   reportes             Reporte[]
   historialReportes    HistorialReporte[]
   paquetesRecibidos    Paquete[]
+  configuracionesCuota ConfiguracionCuota[]
+  generacionesCuota    EjecucionGeneracion[]
 
   @@map("users")
 }
@@ -145,6 +147,7 @@ model Cuota {
   fechaVencimiento DateTime    @map("fecha_vencimiento") @db.Date
   estado           EstadoCuota @default(PENDIENTE)
   pagadaEn         DateTime?   @map("pagada_en")
+  avisos           AvisoCuota[]
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
@@ -373,4 +376,76 @@ model HistorialReporte {
 
   @@index([reporteId, createdAt])
   @@map("historial_reporte")
+}
+// ---------------------------------------------------------------------------
+// H02 · Generación automática de cuotas mensuales
+// ---------------------------------------------------------------------------
+
+// Monto y día de vencimiento con que se generan las cuotas. Cada cambio inserta
+// una fila nueva (historial); la vigente es la más reciente. Cambiarla no toca
+// las cuotas ya generadas.
+model ConfiguracionCuota {
+  id String @id @default(uuid()) @db.Uuid
+
+  // CHECK (monto_mensual BETWEEN 1.00 AND 9999.99) agregado a mano en el SQL.
+  montoMensual   Decimal @map("monto_mensual") @db.Decimal(10, 2)
+  // CHECK (dia_vencimiento BETWEEN 1 AND 28) en el SQL: así existe en todos los meses.
+  diaVencimiento Int     @map("dia_vencimiento")
+
+  // Administrador que la guardó: siempre sale de la sesión.
+  creadaPorId String @map("creada_por") @db.Uuid
+  creadaPor   User   @relation(fields: [creadaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("configuracion_cuota")
+}
+
+enum OrigenGeneracion {
+  MANUAL
+  AUTOMATICA
+
+  @@map("origen_generacion")
+}
+
+// Bitácora de cada generación de cuotas (manual o del cron del día 1).
+model EjecucionGeneracion {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "YYYY-MM", igual que cuota.periodo.
+  periodo  String           @db.Char(7)
+  origen   OrigenGeneracion
+  creadas  Int
+  omitidas Int
+
+  // Null cuando la ejecuta el cron.
+  ejecutadaPorId String? @map("ejecutada_por") @db.Uuid
+  ejecutadaPor   User?   @relation(fields: [ejecutadaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([periodo])
+  @@map("ejecucion_generacion")
+}
+
+enum TipoAvisoCuota {
+  POR_VENCER
+
+  @@map("tipo_aviso_cuota")
+}
+
+// Avisos enviados por cuota. El UNIQUE (cuota_id, tipo) hace que el aviso
+// diario sea seguro aunque la tarea corra dos veces el mismo día.
+model AvisoCuota {
+  id String @id @default(uuid()) @db.Uuid
+
+  cuotaId String @map("cuota_id") @db.Uuid
+  cuota   Cuota  @relation(fields: [cuotaId], references: [id], onDelete: Restrict)
+
+  tipo      TipoAvisoCuota
+  enviadoEn DateTime       @default(now()) @map("enviado_en")
+
+  @@unique([cuotaId, tipo])
+  @@map("aviso_cuota")
 }

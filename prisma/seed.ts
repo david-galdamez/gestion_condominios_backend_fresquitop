@@ -159,6 +159,14 @@ async function main() {
     }
   }
 
+  // Configuración de cuota (H02): solo si no hay ninguna, para no sumar historial en cada corrida.
+  const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@example.com' } });
+  if ((await prisma.configuracionCuota.count()) === 0) {
+    await prisma.configuracionCuota.create({
+      data: { montoMensual: 45, diaVencimiento: 10, creadaPorId: admin.id },
+    });
+  }
+
   // Paquetes en portería (H09): upsert por código; la foto es de ejemplo (no hay archivo).
   const guardia = await prisma.user.findUniqueOrThrow({ where: { email: 'seguridad@example.com' } });
   const paquetesSeed = [

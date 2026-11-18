@@ -295,6 +295,11 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 | `POST` | `/auth/refresh` | — | `200` | Renueva el par de tokens |
 | `POST` | `/auth/logout` | — | `204` | Cierra la sesión |
 | `GET` | `/auth/me` | Bearer | `200` | Usuario autenticado |
+| `GET` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Configuración de cuota vigente (`404` si no existe) |
+| `PUT` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Guarda monto mensual (1.00–9,999.99) y día de vencimiento (1–28) |
+| `POST` | `/cuotas/generar` | Bearer · ADMINISTRADOR | `201` | Genera las cuotas de un periodo `AAAA-MM` para las unidades activas (idempotente) |
+
+Tareas programadas de cuotas (hora de El Salvador): generación automática del mes el día 1 a las 00:00 y aviso "Tu cuota vence pronto" a las 08:00 para las cuotas Pendientes que vencen en 3 días.
 
 ### Ejemplos
 
@@ -549,7 +554,7 @@ cp .env.test.example .env.test   # una sola vez; .env.test no se versiona
 npm run test:e2e
 ```
 
-El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente.
+El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente. Igual con las tareas de H02: `GeneracionAutomaticaService.generarMesActual()` y `AvisoCuotasService.avisarPorVencer()`.
 
 ```
 gestion_condominios_backend_fresquitop

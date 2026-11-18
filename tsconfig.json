@@ -49,6 +49,8 @@
       "@Notificaciones/*": ["./src/notificaciones/*/index.ts"],
       "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
+      "@Cuotas": ["./src/cuotas/index.ts"],
+      "@Cuotas/*": ["./src/cuotas/*/index.ts"],
       "@Areas": ["./src/areas/index.ts"],
       "@Areas/*": ["./src/areas/*/index.ts"],
       "@Autorizaciones": ["./src/autorizaciones/index.ts"],
