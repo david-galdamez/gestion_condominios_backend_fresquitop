@@ -12,6 +12,7 @@ import { UnidadesModule } from '@Unidades';
 import { AutorizacionesModule } from '@Autorizaciones';
 import { AccesosModule } from '@Accesos';
 import { MorosidadModule } from '@Morosidad';
+import { NotificacionesModule } from '@Notificaciones';
 import { HealthModule } from '@Health';
 import { PagosModule } from '@Pagos';
 import { PaquetesModule } from '@Paquetes';
@@ -32,6 +33,7 @@ import { validateEnv } from '@Config';
     PrismaModule,
     HealthModule,
     UsersModule,
+    NotificacionesModule,
     PaquetesModule,
     PagosModule,
     PerfilDirectorioModule,
@@ -44,8 +46,8 @@ import { validateEnv } from '@Config';
     AccesosModule,
     AutorizacionesModule,
     MorosidadModule,
-    AreasModule,     
-    ReportesModule,  
+    AreasModule,
+    ReportesModule,
     ComunicadosModule,
   ],
   providers: [

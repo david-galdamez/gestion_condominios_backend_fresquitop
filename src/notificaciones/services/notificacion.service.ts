@@ -1,66 +1,130 @@
-/** Módulos de origen permitidos (sección 2.6). */
-export const MODULOS_ORIGEN = [
-  'PAGOS',
-  'RESERVAS',
-  'INCIDENCIAS',
-  'VISITAS',
-  'PAQUETERIA',
-  'VOTACIONES',
-  'COMUNICADOS',
-] as const;
-export type ModuloOrigen = (typeof MODULOS_ORIGEN)[number];
+import { Injectable } from '@nestjs/common';
+import { Rol } from '@PrismaClient';
+import { DatoInvalidoError, DestinoNoExisteError } from '@Notificaciones/errors';
+import { NotificacionRepository } from '@Notificaciones/repositories';
+import {
+  MODULOS_ORIGEN,
+  TIPOS_DESTINO,
+  type Aviso,
+  type DestinatarioAviso,
+  type EnviarAvisoInput,
+  type ModuloOrigen,
+  type ResultadoEnvio,
+  type TipoDestino,
+} from '@Notificaciones/types';
 
-export type TipoDestino = 'USUARIO' | 'UNIDAD' | 'TORRE' | 'TODOS';
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface Aviso {
-  /** `id` no aplica con TODOS. */
-  destinatario: { tipo: TipoDestino; id?: string };
-  /** 1 a 80 caracteres. */
-  titulo: string;
-  /** 1 a 300 caracteres. */
-  mensaje: string;
-  moduloOrigen: ModuloOrigen;
-  /** Ruta del frontend, máx. 200 (p. ej. "/paquetes/123"). */
-  referencia?: string;
-}
+export {
+  DatoInvalidoError,
+  DestinoNoExisteError,
+  MODULOS_ORIGEN,
+  TIPOS_DESTINO,
+  type Aviso,
+  type DestinatarioAviso,
+  type EnviarAvisoInput,
+  type ModuloOrigen,
+  type ResultadoEnvio,
+  type TipoDestino,
+};
 
-export interface ResultadoEnvio {
-  id: string;
-  destinatarios: number;
-}
-
-/** El aviso no cumple el contrato (falta título, mensaje, destinatario o el módulo no es válido). */
-export class DatoInvalidoError extends Error {
-  constructor(motivo: string) {
-    super(`Aviso inválido: ${motivo}`);
-    this.name = 'DatoInvalidoError';
+export function validarAviso(aviso: EnviarAvisoInput): void {
+  if (!aviso || typeof aviso !== 'object') {
+    throw new DatoInvalidoError('falta el aviso');
   }
-}
 
-/** El id del destinatario no existe. */
-export class DestinoNoExisteError extends Error {
-  constructor(tipo: TipoDestino, id?: string) {
-    super(`No existe el destinatario ${tipo} ${id ?? ''}`.trim());
-    this.name = 'DestinoNoExisteError';
+  const { destinatario, titulo, mensaje, moduloOrigen, referencia } = aviso;
+
+  if (!destinatario || !TIPOS_DESTINO.includes(destinatario.tipo)) {
+    throw new DatoInvalidoError('falta el destinatario o el tipo no es válido');
+  }
+
+  if (destinatario.tipo !== 'TODOS') {
+    if (!destinatario.id || typeof destinatario.id !== 'string') {
+      throw new DatoInvalidoError('falta el id del destinatario');
+    }
+    if (!UUID_REGEX.test(destinatario.id)) {
+      throw new DatoInvalidoError('el id del destinatario debe ser un UUID válido');
+    }
+  }
+
+  if (typeof titulo !== 'string' || titulo.trim().length < 1 || titulo.length > 80) {
+    throw new DatoInvalidoError('el título debe tener entre 1 y 80 caracteres');
+  }
+
+  if (typeof mensaje !== 'string' || mensaje.trim().length < 1 || mensaje.length > 300) {
+    throw new DatoInvalidoError('el mensaje debe tener entre 1 y 300 caracteres');
+  }
+
+  if (!MODULOS_ORIGEN.includes(moduloOrigen)) {
+    throw new DatoInvalidoError('módulo de origen no válido');
+  }
+
+  if (referencia !== undefined) {
+    if (typeof referencia !== 'string' || referencia.length > 200) {
+      throw new DatoInvalidoError('la referencia supera 200 caracteres');
+    }
   }
 }
 
 /**
- * Contrato de BE-18.1: NotificacionService.enviar(aviso). Sin ruta HTTP; lo
- * llaman los servicios del backend. Es una clase abstracta para usarla como
- * token de inyección de Nest.
+ * Servicio interno común de notificaciones (H18).
+ * Sin rutas HTTP: solo es inyectado por otros servicios del backend.
  */
-export abstract class NotificacionService {
-  abstract enviar(aviso: Aviso): Promise<ResultadoEnvio>;
-}
+@Injectable()
+export class NotificacionService {
+  constructor(private readonly repo: NotificacionRepository) {}
 
-/** Validación del contrato, reutilizable por cualquier implementación. */
-export function validarAviso(aviso: Aviso): void {
-  const { destinatario, titulo, mensaje, moduloOrigen, referencia } = aviso;
-  if (!destinatario?.tipo) throw new DatoInvalidoError('falta el destinatario');
-  if (destinatario.tipo !== 'TODOS' && !destinatario.id) throw new DatoInvalidoError('falta el id del destinatario');
-  if (!titulo || titulo.length > 80) throw new DatoInvalidoError('el título debe tener entre 1 y 80 caracteres');
-  if (!mensaje || mensaje.length > 300) throw new DatoInvalidoError('el mensaje debe tener entre 1 y 300 caracteres');
-  if (!MODULOS_ORIGEN.includes(moduloOrigen)) throw new DatoInvalidoError('módulo de origen no válido');
-  if (referencia && referencia.length > 200) throw new DatoInvalidoError('la referencia supera 200 caracteres');
+  async enviar(aviso: EnviarAvisoInput): Promise<ResultadoEnvio> {
+    validarAviso(aviso);
+
+    const residenteIds = await this.resolverDestinatarios(aviso.destinatario);
+
+    return this.repo.crearConDestinatarios(
+      {
+        moduloOrigen: aviso.moduloOrigen,
+        titulo: aviso.titulo,
+        mensaje: aviso.mensaje,
+        referencia: aviso.referencia,
+        destinoTipo: aviso.destinatario.tipo,
+        destinoId: aviso.destinatario.tipo === 'TODOS' ? undefined : aviso.destinatario.id,
+      },
+      residenteIds,
+    );
+  }
+
+  private async resolverDestinatarios(destinatario: DestinatarioAviso): Promise<string[]> {
+    switch (destinatario.tipo) {
+      case 'USUARIO': {
+        const usuarioId = destinatario.id as string;
+        const usuario = await this.repo.findUsuarioById(usuarioId);
+        if (!usuario) {
+          throw new DestinoNoExisteError('USUARIO', usuarioId);
+        }
+        return usuario.rol === Rol.RESIDENTE && usuario.isActive ? [usuario.id] : [];
+      }
+
+      case 'UNIDAD': {
+        const unidadId = destinatario.id as string;
+        const existe = await this.repo.existsUnidad(unidadId);
+        if (!existe) {
+          throw new DestinoNoExisteError('UNIDAD', unidadId);
+        }
+        return this.repo.findResidentesActivosPorUnidad(unidadId);
+      }
+
+      case 'TORRE': {
+        const torreId = destinatario.id as string;
+        const existe = await this.repo.existsTorre(torreId);
+        if (!existe) {
+          throw new DestinoNoExisteError('TORRE', torreId);
+        }
+        return this.repo.findResidentesActivosPorTorre(torreId);
+      }
+
+      case 'TODOS':
+        return this.repo.findTodosResidentesActivos();
+    }
+  }
 }

@@ -9,9 +9,12 @@ import type {
 } from '../repositories/index.js';
 import { AvisoCuotasService, avisoPorVencer } from './aviso-cuotas.service.js';
 
+const UNIDAD_1_ID = '11111111-1111-4111-8111-111111111111';
+const UNIDAD_2_ID = '22222222-2222-4222-8222-222222222222';
+
 const cuota = (extra: Partial<CuotaPorVencer> = {}): CuotaPorVencer => ({
   id: 'q-1',
-  unidadId: 'u-1',
+  unidadId: UNIDAD_1_ID,
   periodo: '2026-12',
   monto: new Prisma.Decimal('45'),
   fechaVencimiento: new Date('2026-12-10T00:00:00.000Z'),
@@ -22,7 +25,7 @@ describe('avisoPorVencer', () => {
   it('arma el aviso del contrato de notificaciones para la unidad', () => {
     const aviso = avisoPorVencer(cuota());
     expect(aviso).toEqual({
-      destinatario: { tipo: 'UNIDAD', id: 'u-1' },
+      destinatario: { tipo: 'UNIDAD', id: UNIDAD_1_ID },
       titulo: 'Tu cuota vence pronto',
       mensaje: 'La cuota de 2026-12 por $45.00 vence el 10/12/2026.',
       moduloOrigen: 'PAGOS',
@@ -66,7 +69,7 @@ describe('AvisoCuotasService', () => {
   it('envía un aviso por cuota y cuenta solo los enviados', async () => {
     repo.findPendientesQueVencen.mockResolvedValue([
       cuota(),
-      cuota({ id: 'q-2', unidadId: 'u-2' }),
+      cuota({ id: 'q-2', unidadId: UNIDAD_2_ID }),
     ]);
     repo.registrarAvisoPorVencer
       .mockImplementationOnce(registrarQueEnvia)
@@ -76,7 +79,7 @@ describe('AvisoCuotasService', () => {
     await expect(service.avisarPorVencer()).resolves.toBe(1);
     expect(notificaciones.enviar).toHaveBeenCalledTimes(1);
     expect(notificaciones.enviar).toHaveBeenCalledWith(
-      expect.objectContaining({ destinatario: { tipo: 'UNIDAD', id: 'u-1' } }),
+      expect.objectContaining({ destinatario: { tipo: 'UNIDAD', id: UNIDAD_1_ID } }),
     );
   });
 
