@@ -63,6 +63,7 @@ model User {
   comunicados            Comunicado[]
   perfilDirectorio       PerfilDirectorio?
   pagos                  Pago[]
+  notificacionesRecibidas NotificacionDestinatario[]
 
   @@map("users")
 }
@@ -655,4 +656,39 @@ model PagoCuota {
 
   @@id([pagoId, cuotaId])
   @@map("pago_cuota")
+}
+
+// H18 · Servicio común de notificaciones
+
+// Aviso emitido por un módulo interno del backend hacia residentes.
+// CHECK de modulo_origen y destino_tipo agregados en el SQL de la migración.
+model Notificacion {
+  id           String   @id @default(uuid()) @db.Uuid
+  moduloOrigen String   @map("modulo_origen") @db.VarChar(15)
+  titulo       String   @db.VarChar(80)
+  mensaje      String   @db.VarChar(300)
+  referencia   String?  @db.VarChar(200)
+  destinoTipo  String   @map("destino_tipo") @db.VarChar(10)
+  destinoId    String?  @map("destino_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  destinatarios NotificacionDestinatario[]
+
+  @@map("notificacion")
+}
+
+// Estado de entrega y lectura de una notificación por cada residente activo.
+model NotificacionDestinatario {
+  notificacionId String       @map("notificacion_id") @db.Uuid
+  notificacion   Notificacion @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  leida   Boolean   @default(false)
+  leidaEn DateTime? @map("leida_en")
+
+  @@id([notificacionId, residenteId])
+  @@index([residenteId, leida])
+  @@map("notificacion_destinatario")
 }
