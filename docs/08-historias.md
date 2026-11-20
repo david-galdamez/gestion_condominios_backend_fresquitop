@@ -66,7 +66,7 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
 | H13 | Publicar un comunicado para todos o para una torre | David Galdamez | [card](https://trello.com/c/Z8275TmM) | [BE #12](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/12), [FE #14](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/14) | En revisión (el aviso usa el servicio temporal de notificaciones hasta H18) |
-| H14 | Ver solo los comunicados que me aplican | Pablo Castellón | [card](https://trello.com/c/HjoPHQAB) | — | Pendiente: depende de H13 |
+| H14 | Ver solo los comunicados que me aplican | Pablo Castellón | [card](https://trello.com/c/HjoPHQAB) | [BE #29](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/29), [FE #25](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/25) | En develop |
 
 ## Módulo 8: Directorio de residentes
 
