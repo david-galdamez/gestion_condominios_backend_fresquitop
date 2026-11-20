@@ -65,6 +65,9 @@ model User {
   pagos                   Pago[]
   notificacionesRecibidas NotificacionDestinatario[]
   asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
+  
+  // H12/H27: relación con los votos emitidos
+  votos                   Voto[]
 
   reservas Reserva[]
 
@@ -118,6 +121,9 @@ model Unidad {
   paquetes       Paquete[]
   accesos        RegistroAcceso[]
   pagos          Pago[]
+  
+  // H12/H27: relación con los votos emitidos por la unidad
+  votos          Voto[]
 
   @@index([torreId])
   reservas Reserva[]
@@ -769,6 +775,7 @@ model Asamblea {
   creadaPor     User           @relation("AsambleaCreadaPor", fields: [creadaPorId], references: [id], onDelete: Restrict)
 
   temas     TemaVotacion[]
+  votos Voto[]
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
 
@@ -783,6 +790,7 @@ model TemaVotacion {
   orden      Int
 
   opciones OpcionTema[]
+  votos    Voto[]
 
   @@unique([asambleaId, orden])
   @@map("tema_votacion")
@@ -795,7 +803,32 @@ model OpcionTema {
   texto  String       @db.VarChar(100)
   orden  Int
 
+  votos Voto[]
+
   @@unique([temaId, orden])
   @@map("opcion_tema")
 }
 
+// ---------------------------------------------------------------------------
+// H12 / H27 - Votaciones y comprobantes
+// ---------------------------------------------------------------------------
+
+model Voto {
+  id                 String        @id @default(uuid()) @db.Uuid
+  asambleaId         String        @map("asamblea_id") @db.Uuid
+  asamblea           Asamblea      @relation(fields: [asambleaId], references: [id], onDelete: Restrict)
+  temaId             String        @map("tema_id") @db.Uuid
+  tema               TemaVotacion  @relation(fields: [temaId], references: [id], onDelete: Restrict)
+  opcionId           String        @map("opcion_id") @db.Uuid
+  opcion             OpcionTema    @relation(fields: [opcionId], references: [id], onDelete: Restrict)
+  unidadId           String        @map("unidad_id") @db.Uuid
+  unidad             Unidad        @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  residenteId        String        @map("residente_id") @db.Uuid
+  residente          User          @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  codigoVerificacion String        @unique @map("codigo_verificacion") @db.Char(8)
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  @@unique([temaId, unidadId])
+  @@map("voto")
+}

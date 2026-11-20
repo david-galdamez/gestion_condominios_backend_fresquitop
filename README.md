@@ -608,144 +608,7 @@ npm run test:e2e
 
 El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente. Igual con las tareas de H02: `GeneracionAutomaticaService.generarMesActual()` y `AvisoCuotasService.avisarPorVencer()`.
 
-```
-gestion_condominios_backend_fresquitop
-├─ .dockerignore
-├─ .oxlintrc.json
-├─ .prettierignore
-├─ .prettierrc
-├─ docker-compose.yml
-├─ Dockerfile
-├─ nest-cli.json
-├─ package-lock.json
-├─ package.json
-├─ prisma
-│  ├─ migrations
-│  │  ├─ 20260920172640_init
-│  │  │  └─ migration.sql
-│  │  ├─ 20260927163851_rename_username_to_email
-│  │  │  └─ migration.sql
-│  │  ├─ 20261104031638_roles_torres_unidades
-│  │  │  └─ migration.sql
-│  │  ├─ 20261104224235_cuotas
-│  │  │  └─ migration.sql
-│  │  └─ migration_lock.toml
-│  ├─ schema.prisma
-│  └─ seed.ts
-├─ prisma.config.ts
-├─ README.md
-├─ src
-│  ├─ app.module.ts
-│  ├─ app.setup.ts
-│  ├─ auth
-│  │  ├─ auth.module.ts
-│  │  ├─ controllers
-│  │  │  ├─ auth.controller.ts
-│  │  │  └─ index.ts
-│  │  ├─ decorators
-│  │  │  ├─ current-user.decorator.ts
-│  │  │  ├─ index.ts
-│  │  │  ├─ public.decorator.ts
-│  │  │  └─ roles.decorator.ts
-│  │  ├─ dto
-│  │  │  ├─ auth-response.dto.ts
-│  │  │  ├─ index.ts
-│  │  │  ├─ login.dto.ts
-│  │  │  └─ refresh-token.dto.ts
-│  │  ├─ guards
-│  │  │  ├─ index.ts
-│  │  │  ├─ jwt-auth.guard.ts
-│  │  │  ├─ roles.guard.spec.ts
-│  │  │  └─ roles.guard.ts
-│  │  ├─ index.ts
-│  │  ├─ repositories
-│  │  │  ├─ index.ts
-│  │  │  └─ refresh-token.repository.ts
-│  │  ├─ services
-│  │  │  ├─ auth.service.ts
-│  │  │  ├─ index.ts
-│  │  │  └─ token.service.ts
-│  │  └─ types
-│  │     ├─ auth.types.ts
-│  │     └─ index.ts
-│  ├─ common
-│  │  └─ decorators
-│  │     ├─ index.ts
-│  │     └─ is-normalized-email.decorator.ts
-│  ├─ config
-│  │  ├─ env.validation.ts
-│  │  └─ index.ts
-│  ├─ estado-cuenta
-│  │  ├─ controllers
-│  │  │  ├─ estado-cuenta.controller.ts
-│  │  │  └─ index.ts
-│  │  ├─ dto
-│  │  │  ├─ estado-cuenta-query.dto.spec.ts
-│  │  │  ├─ estado-cuenta-query.dto.ts
-│  │  │  ├─ estado-cuenta-response.dto.ts
-│  │  │  └─ index.ts
-│  │  ├─ estado-cuenta.module.ts
-│  │  ├─ index.ts
-│  │  ├─ repositories
-│  │  │  ├─ cuota.repository.ts
-│  │  │  └─ index.ts
-│  │  └─ services
-│  │     ├─ cuotas-vencimiento.service.spec.ts
-│  │     ├─ cuotas-vencimiento.service.ts
-│  │     ├─ estado-cuenta.service.spec.ts
-│  │     ├─ estado-cuenta.service.ts
-│  │     └─ index.ts
-│  ├─ health
-│  │  ├─ controllers
-│  │  │  ├─ health.controller.spec.ts
-│  │  │  ├─ health.controller.ts
-│  │  │  └─ index.ts
-│  │  ├─ health.module.ts
-│  │  ├─ index.ts
-│  │  └─ services
-│  │     ├─ health.service.ts
-│  │     └─ index.ts
-│  ├─ main.ts
-│  ├─ prisma
-│  │  ├─ index.ts
-│  │  ├─ prisma.module.ts
-│  │  └─ services
-│  │     ├─ index.ts
-│  │     └─ prisma.service.ts
-│  └─ users
-│     ├─ controllers
-│     │  ├─ index.ts
-│     │  └─ users.controller.ts
-│     ├─ dto
-│     │  ├─ create-user.dto.ts
-│     │  ├─ index.ts
-│     │  └─ user-response.dto.ts
-│     ├─ errors
-│     │  ├─ email-already-taken.error.ts
-│     │  └─ index.ts
-│     ├─ index.ts
-│     ├─ repositories
-│     │  ├─ index.ts
-│     │  └─ user.repository.ts
-│     ├─ services
-│     │  ├─ index.ts
-│     │  └─ users.service.ts
-│     └─ users.module.ts
-├─ test
-│  ├─ estado-cuenta.e2e-spec.ts
-│  ├─ health.e2e-spec.ts
-│  ├─ helpers
-│  │  ├─ app.ts
-│  │  └─ fixtures.ts
-│  └─ setup
-│     ├─ env.ts
-│     └─ global-setup.ts
-├─ tsconfig.build.json
-├─ tsconfig.json
-├─ vitest.config.e2e.ts
-└─ vitest.config.ts
 
-```
 ```
 gestion_condominios_backend_fresquitop
 ├─ .dockerignore
@@ -800,6 +663,8 @@ gestion_condominios_backend_fresquitop
 │  │  ├─ 20261118010000_pagos
 │  │  │  └─ migration.sql
 │  │  ├─ 20261119000000_h18_notificaciones
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120024056_h11_asambleas
 │  │  │  └─ migration.sql
 │  │  └─ migration_lock.toml
 │  ├─ schema.prisma
@@ -857,6 +722,21 @@ gestion_condominios_backend_fresquitop
 │  │  └─ services
 │  │     ├─ areas.service.spec.ts
 │  │     ├─ areas.service.ts
+│  │     └─ index.ts
+│  ├─ asambleas
+│  │  ├─ asambleas.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ asamblea.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ crear-asamblea.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ asamblea.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ asamblea.service.ts
 │  │     └─ index.ts
 │  ├─ auth
 │  │  ├─ auth.module.ts
@@ -1034,7 +914,6 @@ gestion_condominios_backend_fresquitop
 │  │  │  └─ notificacion.repository.ts
 │  │  ├─ services
 │  │  │  ├─ index.ts
-│  │  │  ├─ notificacion-temporal.service.ts
 │  │  │  ├─ notificacion.service.spec.ts
 │  │  │  └─ notificacion.service.ts
 │  │  └─ types
