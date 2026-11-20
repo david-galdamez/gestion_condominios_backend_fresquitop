@@ -1,11 +1,46 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
-import { EstadoAsamblea } from '@PrismaClient';
+import { EstadoAsamblea, Prisma } from '@PrismaClient';
 import type { CrearAsambleaDto } from '../dto/crear-asamblea.dto.js';
+import { CodigoVerificacionColisionError, UnidadYaVotoError } from '../errors/index.js';
+
+const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
+
+export interface DatosVotoNuevo {
+  temaId: string;
+  opcionId: string;
+  codigoVerificacion: string;
+}
+
+export interface VotoRegistrado {
+  temaId: string;
+  codigoVerificacion: string;
+  createdAt: Date;
+}
+
+function esErrorP2002(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return error.code === UNIQUE_CONSTRAINT_VIOLATION;
+  }
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === UNIQUE_CONSTRAINT_VIOLATION
+  );
+}
+
+function esColisionCodigoVerificacion(error: unknown): boolean {
+  const detalle =
+    error instanceof Prisma.PrismaClientKnownRequestError
+      ? `${error.message} ${JSON.stringify(error.meta ?? {})}`
+      : `${error instanceof Error ? error.message : String(error)} ${JSON.stringify(error)}`;
+  return /codigo_verificacion|codigoVerificacion/i.test(detalle);
+}
 
 @Injectable()
 export class AsambleaRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   crear(creadaPorId: string, dto: CrearAsambleaDto) {
     return this.prisma.asamblea.create({
@@ -31,7 +66,12 @@ export class AsambleaRepository {
   findById(id: string) {
     return this.prisma.asamblea.findUnique({
       where: { id },
-      include: { temas: { include: { opciones: true } } },
+      include: {
+        temas: {
+          orderBy: { orden: 'asc' },
+          include: { opciones: { orderBy: { orden: 'asc' } } },
+        },
+      },
     });
   }
 
@@ -58,11 +98,11 @@ export class AsambleaRepository {
           include: {
             opciones: {
               orderBy: { orden: 'asc' },
-              include: { _count: { select: { votos: true } } }
-            }
-          }
-        }
-      }
+              include: { _count: { select: { votos: true } } },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -71,16 +111,127 @@ export class AsambleaRepository {
       where: { codigoVerificacion: codigo },
       include: {
         tema: {
-          include: { asamblea: { select: { titulo: true } } }
-        }
-      }
+          include: { asamblea: { select: { titulo: true } } },
+        },
+      },
     });
   }
 
   listar() {
     return this.prisma.asamblea.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { temas: { include: { opciones: true } } }
+      include: { temas: { include: { opciones: true } } },
     });
+  }
+
+  async listarParaResidente(unidadId: string | null) {
+    const asambleas = await this.prisma.asamblea.findMany({
+      where: { estado: { not: EstadoAsamblea.BORRADOR } },
+      orderBy: { fechaApertura: 'desc' },
+      include: {
+        temas: {
+          orderBy: { orden: 'asc' },
+          include: { opciones: { orderBy: { orden: 'asc' } } },
+        },
+      },
+    });
+
+    if (!unidadId || asambleas.length === 0) {
+      return asambleas.map((asamblea) => ({ asamblea, votosUnidad: [] as VotoRegistrado[] }));
+    }
+
+    const votos = await this.prisma.voto.findMany({
+      where: {
+        unidadId,
+        asambleaId: { in: asambleas.map((a) => a.id) },
+      },
+      select: { asambleaId: true, temaId: true, codigoVerificacion: true, createdAt: true },
+    });
+
+    const votosPorAsamblea = new Map<string, VotoRegistrado[]>();
+    for (const voto of votos) {
+      const lista = votosPorAsamblea.get(voto.asambleaId) ?? [];
+      lista.push({
+        temaId: voto.temaId,
+        codigoVerificacion: voto.codigoVerificacion,
+        createdAt: voto.createdAt,
+      });
+      votosPorAsamblea.set(voto.asambleaId, lista);
+    }
+
+    return asambleas.map((asamblea) => ({
+      asamblea,
+      votosUnidad: votosPorAsamblea.get(asamblea.id) ?? [],
+    }));
+  }
+
+  async findDetalleConVotosUnidad(id: string, unidadId: string | null) {
+    const asamblea = await this.findById(id);
+    if (!asamblea) return null;
+
+    const votosUnidad: VotoRegistrado[] = unidadId
+      ? await this.prisma.voto.findMany({
+          where: { asambleaId: id, unidadId },
+          select: { temaId: true, codigoVerificacion: true, createdAt: true },
+        })
+      : [];
+
+    return { asamblea, votosUnidad };
+  }
+
+  async registrarVotosEnTransaccion(
+    asambleaId: string,
+    unidadId: string,
+    residenteId: string,
+    votos: DatosVotoNuevo[],
+  ): Promise<VotoRegistrado[]> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const votoExistente = await tx.voto.findFirst({
+          where: {
+            unidadId,
+            temaId: { in: votos.map((v) => v.temaId) },
+          },
+          select: { id: true },
+        });
+
+        if (votoExistente) {
+          throw new UnidadYaVotoError();
+        }
+
+        const registrados: VotoRegistrado[] = [];
+        for (const item of votos) {
+          const creado = await tx.voto.create({
+            data: {
+              asambleaId,
+              temaId: item.temaId,
+              opcionId: item.opcionId,
+              unidadId,
+              residenteId,
+              codigoVerificacion: item.codigoVerificacion,
+            },
+            select: {
+              temaId: true,
+              codigoVerificacion: true,
+              createdAt: true,
+            },
+          });
+          registrados.push(creado);
+        }
+
+        return registrados;
+      });
+    } catch (error) {
+      if (error instanceof UnidadYaVotoError) {
+        throw error;
+      }
+      if (esErrorP2002(error)) {
+        if (esColisionCodigoVerificacion(error)) {
+          throw new CodigoVerificacionColisionError();
+        }
+        throw new UnidadYaVotoError();
+      }
+      throw error;
+    }
   }
 }
