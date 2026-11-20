@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AreasController } from '@Areas/controllers';
-import { AreaRepository } from '@Areas/repositories';
-import { AreasService } from '@Areas/services';
+import { AreaRepository, DisponibilidadRepository } from '@Areas/repositories';
+import { AreasService, DisponibilidadService } from '@Areas/services';
 
 @Module({
   controllers: [AreasController],
-  providers: [AreasService, AreaRepository],
+  providers: [AreasService, AreaRepository, DisponibilidadService, DisponibilidadRepository],
   // Disponibilidad (H23) y reservas (H04) leen las áreas desde acá.
   exports: [AreaRepository],
 })

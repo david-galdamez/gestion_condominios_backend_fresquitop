@@ -50,6 +50,7 @@ import { validateEnv } from '@Config';
     AutorizacionesModule,
     MorosidadModule,
     AreasModule,
+    ReservasModule,
     ReportesModule,
     ComunicadosModule,
     AsambleasModule,

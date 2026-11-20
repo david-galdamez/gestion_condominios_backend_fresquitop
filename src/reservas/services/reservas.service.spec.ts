@@ -16,7 +16,7 @@ describe('ReservasService · cancelación', () => {
     {} as UnidadRepository,
   );
 
-  const fila = (estado = EstadoReserva.CONFIRMADA) => ({
+  const fila = (estado: EstadoReserva = EstadoReserva.CONFIRMADA) => ({
     id: 'reserva-1',
     codigo: 'RES-000001',
     areaId: 'area-1',
