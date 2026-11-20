@@ -7,7 +7,7 @@ import type {
   ReportesPaginaDto,
   UbicacionesDto,
 } from '@Reportes/dto';
-import { ReporteRepository, type ReporteConEvidencias } from '@Reportes/repositories';
+import { ReporteRepository, type ReporteDetalleResidente } from '@Reportes/repositories';
 import {
   AREAS_COMUNES,
   MAX_FOTO_BYTES,
@@ -23,7 +23,7 @@ import { EvidenciaStorageService } from './evidencia-storage.service.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function aReporteDto(r: ReporteConEvidencias): ReporteDto {
+function aReporteDto(r: ReporteDetalleResidente): ReporteDto {
   const numero = formatearNumero(r.numero);
   return {
     id: r.id,
@@ -35,6 +35,14 @@ function aReporteDto(r: ReporteConEvidencias): ReporteDto {
     estado: r.estado,
     fotos: r.evidencias.map((e) => `/${API_PREFIX}/reportes/${numero}/fotos/${e.id}`),
     creadoEn: r.createdAt.toISOString(),
+    resueltoEn: r.resueltoEn ? r.resueltoEn.toISOString() : null,
+    comentarioCierre: r.comentarioCierre,
+    historial: r.historial.map((h) => ({
+      id: h.id,
+      estado: h.estado,
+      fecha: h.createdAt.toISOString(),
+      comentario: h.comentario,
+    })),
   };
 }
 

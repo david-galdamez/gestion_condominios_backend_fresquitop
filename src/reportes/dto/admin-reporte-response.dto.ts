@@ -110,6 +110,15 @@ export class AdminReporteDetalleDto extends AdminReporteItemDto {
   @ApiProperty()
   descripcion!: string;
 
+  @ApiPropertyOptional({ example: '2026-11-20T16:30:00.000Z', nullable: true, description: 'ISO 8601' })
+  resueltoEn!: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Se reemplazó el empaque de la tubería principal.',
+    nullable: true,
+  })
+  comentarioCierre!: string | null;
+
   @ApiProperty({ type: [EvidenciaDetalleDto] })
   evidencias!: EvidenciaDetalleDto[];
 
@@ -132,4 +141,18 @@ export class AsignacionReporteResponseDto {
 
   @ApiProperty({ example: 'Fontanería López' })
   responsable!: string;
+}
+
+export class ResolverReporteResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'REP-000123' })
+  numero!: string;
+
+  @ApiProperty({ enum: EstadoReporte, enumName: 'EstadoReporte', example: 'RESUELTO' })
+  estado!: EstadoReporte;
+
+  @ApiProperty({ example: '2026-11-20T16:30:00.000Z', description: 'ISO 8601' })
+  resueltoEn!: string;
 }

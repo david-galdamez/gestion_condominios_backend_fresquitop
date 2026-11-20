@@ -404,11 +404,14 @@ model Reporte {
   descripcion String           @db.VarChar(500)
 
   // H06: sin asignar al crearse (NULL); el administrador asigna prioridad y responsable juntos.
-  prioridad   PrioridadReporte?
-  responsable String?           @db.VarChar(60)
-  estado      EstadoReporte     @default(ABIERTO)
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  prioridad        PrioridadReporte?
+  responsable      String?           @db.VarChar(60)
+  estado           EstadoReporte     @default(ABIERTO)
+  // H24: fecha y comentario de cierre al pasar a RESUELTO (NULL mientras no esté resuelto).
+  resueltoEn       DateTime?         @map("resuelto_en")
+  comentarioCierre String?           @map("comentario_cierre") @db.VarChar(300)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
   evidencias EvidenciaReporte[]
   historial  HistorialReporte[]
@@ -447,7 +450,7 @@ model HistorialReporte {
   reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
 
   estado     EstadoReporte
-  comentario String?       @db.VarChar(200)
+  comentario String?       @db.VarChar(300)
 
   cambiadoPorId String @map("cambiado_por_id") @db.Uuid
   cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)

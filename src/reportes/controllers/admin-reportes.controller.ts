@@ -18,6 +18,8 @@ import {
   AdminReportesQueryDto,
   AsignacionReporteResponseDto,
   AsignarReporteDto,
+  ResolverReporteDto,
+  ResolverReporteResponseDto,
 } from '@Reportes/dto';
 import { AdminReportesService } from '@Reportes/services';
 
@@ -64,5 +66,21 @@ export class AdminReportesController {
     @Body() dto: AsignarReporteDto,
   ): Promise<AsignacionReporteResponseDto> {
     return this.service.asignar(id, admin.id, dto);
+  }
+
+  @Patch(':id/resolver')
+  @ApiOperation({ summary: 'Marcar un reporte En proceso como Resuelto y notificar al residente' })
+  @ApiOkResponse({ type: ResolverReporteResponseDto })
+  @ApiBadRequestResponse({ description: 'El comentario debe tener entre 10 y 300 caracteres.' })
+  @ApiNotFoundResponse({ description: 'Reporte no encontrado.' })
+  @ApiConflictResponse({ description: 'Solo se pueden resolver reportes En proceso.' })
+  @ApiUnauthorizedResponse({ description: 'Sin sesión.' })
+  @ApiForbiddenResponse({ description: 'No tienes permiso para esta acción' })
+  resolver(
+    @Param('id') id: string,
+    @CurrentUser() admin: User,
+    @Body() dto: ResolverReporteDto,
+  ): Promise<ResolverReporteResponseDto> {
+    return this.service.resolver(id, admin.id, dto);
   }
 }

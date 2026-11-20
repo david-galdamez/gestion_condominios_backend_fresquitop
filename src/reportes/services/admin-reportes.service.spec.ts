@@ -4,13 +4,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NotificacionService } from '@Notificaciones/services';
 import {
   CategoriaReporte,
   EstadoReporte,
   PrioridadReporte,
   Rol,
 } from '@PrismaClient';
-import { ReporteNotFoundError, ReporteYaResueltoError } from '@Reportes/errors';
+import {
+  ReporteEstadoInvalidoError,
+  ReporteNotFoundError,
+  ReporteYaResueltoError,
+} from '@Reportes/errors';
 import type {
   ReporteAdminDetalle,
   ReporteAdminItem,
@@ -18,8 +23,10 @@ import type {
 } from '@Reportes/repositories';
 import {
   MENSAJE_ASIGNACION_INCOMPLETA,
+  MENSAJE_COMENTARIO_CIERRE,
   MENSAJE_REPORTE_NO_ENCONTRADO,
   MENSAJE_REPORTE_YA_RESUELTO,
+  MENSAJE_SOLO_EN_PROCESO,
 } from '../reportes.constants.js';
 import { AdminReportesService } from './admin-reportes.service.js';
 
@@ -39,6 +46,8 @@ const itemAdminFalso = (over: Partial<ReporteAdminItem> = {}): ReporteAdminItem 
     prioridad: null,
     responsable: null,
     estado: EstadoReporte.ABIERTO,
+    resueltoEn: null,
+    comentarioCierre: null,
     createdAt: new Date('2026-11-10T10:00:00.000Z'),
     updatedAt: new Date('2026-11-10T10:00:00.000Z'),
     residente: {
@@ -78,11 +87,15 @@ const detalleAdminFalso = (over: Partial<ReporteAdminDetalle> = {}): ReporteAdmi
     ...over,
   }) as unknown as ReporteAdminDetalle;
 
-describe('AdminReportesService (H06)', () => {
+describe('AdminReportesService (H06 y H24)', () => {
   let repo: {
     findPaginaAdmin: ReturnType<typeof vi.fn>;
     findDetalleAdminById: ReturnType<typeof vi.fn>;
     asignar: ReturnType<typeof vi.fn>;
+    resolver: ReturnType<typeof vi.fn>;
+  };
+  let notificaciones: {
+    enviar: ReturnType<typeof vi.fn>;
   };
   let service: AdminReportesService;
 
@@ -91,8 +104,15 @@ describe('AdminReportesService (H06)', () => {
       findPaginaAdmin: vi.fn(),
       findDetalleAdminById: vi.fn(),
       asignar: vi.fn(),
+      resolver: vi.fn(),
     };
-    service = new AdminReportesService(repo as unknown as ReporteRepository);
+    notificaciones = {
+      enviar: vi.fn().mockResolvedValue({ id: '66666666-6666-4666-8666-666666666666', destinatarios: 1 }),
+    };
+    service = new AdminReportesService(
+      repo as unknown as ReporteRepository,
+      notificaciones as unknown as NotificacionService,
+    );
   });
 
   describe('listar', () => {
@@ -134,7 +154,6 @@ describe('AdminReportesService (H06)', () => {
         createdAt: new Date('2026-11-04T08:00:00.000Z'),
       });
 
-      // Entregados desordenados para validar el ordenamiento determinístico.
       repo.findPaginaAdmin.mockResolvedValue({
         reportes: [sinAsignarAntiguo, baja, mediaReciente, altaReciente, mediaAntigua, altaAntigua],
         total: 6,
@@ -155,12 +174,12 @@ describe('AdminReportesService (H06)', () => {
       expect(res.total).toBe(6);
       expect(res.pagina).toBe(1);
       expect(res.datos.map((d) => d.numero)).toEqual([
-        'REP-000006', // ALTA más antigua
-        'REP-000005', // ALTA más reciente
-        'REP-000004', // MEDIA más antigua
-        'REP-000003', // MEDIA más reciente
-        'REP-000002', // BAJA
-        'REP-000001', // sin asignar (NULL)
+        'REP-000006',
+        'REP-000005',
+        'REP-000004',
+        'REP-000003',
+        'REP-000002',
+        'REP-000001',
       ]);
     });
   });
@@ -175,6 +194,8 @@ describe('AdminReportesService (H06)', () => {
       expect(res.evidencias).toHaveLength(1);
       expect(res.historial).toHaveLength(1);
       expect(res.unidades).toEqual(['A-101']);
+      expect(res.resueltoEn).toBeNull();
+      expect(res.comentarioCierre).toBeNull();
     });
 
     it('lanza 404 si el reporte no existe o el id no es UUID válido', async () => {
@@ -283,6 +304,113 @@ describe('AdminReportesService (H06)', () => {
         MENSAJE_ASIGNACION_INCOMPLETA,
       );
       expect(repo.asignar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resolver (H24)', () => {
+    const comentarioValido = 'Se reemplazó el empaque de la tubería y se probó sin fugas.';
+
+    it('resuelve un reporte EN_PROCESO, devuelve 200 con resueltoEn y envía exactamente 1 notificación al residente', async () => {
+      const resueltoEn = new Date('2026-11-20T16:30:00.000Z');
+      repo.resolver.mockResolvedValue({
+        id: REPORTE_ID,
+        numero: 123,
+        residenteId: RESIDENTE_ID,
+        estado: EstadoReporte.RESUELTO,
+        resueltoEn,
+        comentarioCierre: comentarioValido,
+      });
+
+      const res = await service.resolver(REPORTE_ID, ADMIN_ID, {
+        comentario: `  ${comentarioValido}  `,
+      });
+
+      expect(repo.resolver).toHaveBeenCalledOnce();
+      expect(repo.resolver).toHaveBeenCalledWith({
+        reporteId: REPORTE_ID,
+        adminId: ADMIN_ID,
+        comentario: comentarioValido,
+      });
+
+      expect(notificaciones.enviar).toHaveBeenCalledOnce();
+      expect(notificaciones.enviar).toHaveBeenCalledWith({
+        destinatario: { tipo: 'USUARIO', id: RESIDENTE_ID },
+        titulo: 'Tu reporte REP-000123 fue resuelto',
+        mensaje: comentarioValido,
+        moduloOrigen: 'INCIDENCIAS',
+        referencia: '/reportes/REP-000123',
+      });
+
+      expect(res).toEqual({
+        id: REPORTE_ID,
+        numero: 'REP-000123',
+        estado: EstadoReporte.RESUELTO,
+        resueltoEn: '2026-11-20T16:30:00.000Z',
+      });
+    });
+
+    it('lanza ConflictException (409) al intentar resolver un reporte ABIERTO y NO envía notificación', async () => {
+      repo.resolver.mockRejectedValue(
+        new ReporteEstadoInvalidoError(REPORTE_ID, EstadoReporte.ABIERTO),
+      );
+
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(ConflictException);
+
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(MENSAJE_SOLO_EN_PROCESO);
+
+      expect(notificaciones.enviar).not.toHaveBeenCalled();
+    });
+
+    it('lanza ConflictException (409) al intentar resolver un reporte ya RESUELTO y NO envía notificación', async () => {
+      repo.resolver.mockRejectedValue(
+        new ReporteEstadoInvalidoError(REPORTE_ID, EstadoReporte.RESUELTO),
+      );
+
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(ConflictException);
+
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(MENSAJE_SOLO_EN_PROCESO);
+
+      expect(notificaciones.enviar).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException (404) si el reporte no existe o el id no es UUID válido y NO envía notificación', async () => {
+      await expect(
+        service.resolver('id-invalido', ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(NotFoundException);
+      expect(repo.resolver).not.toHaveBeenCalled();
+
+      repo.resolver.mockRejectedValue(new ReporteNotFoundError(REPORTE_ID));
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario: comentarioValido }),
+      ).rejects.toThrow(MENSAJE_REPORTE_NO_ENCONTRADO);
+
+      expect(notificaciones.enviar).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['vacío', ''],
+      ['solo espacios', '         '],
+      ['menor a 10 caracteres', 'Muy corto'],
+      ['mayor a 300 caracteres', 'x'.repeat(301)],
+    ])('lanza BadRequestException (400) cuando el comentario es %s y NO envía notificación', async (_caso, comentario) => {
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario }),
+      ).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.resolver(REPORTE_ID, ADMIN_ID, { comentario }),
+      ).rejects.toThrow(MENSAJE_COMENTARIO_CIERRE);
+
+      expect(repo.resolver).not.toHaveBeenCalled();
+      expect(notificaciones.enviar).not.toHaveBeenCalled();
     });
   });
 });
