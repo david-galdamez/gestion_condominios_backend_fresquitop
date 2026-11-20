@@ -97,15 +97,33 @@ cancelar”.
 | POST | /api/v1/paquetes | Registra un paquete con foto (multipart) y avisa a la unidad | Seguridad |
 | GET | /api/v1/paquetes | Paquetes en portería y retenidos | Seguridad |
 
-### Módulo 7: Comunicados (H13)
+### Módulo 7: Comunicados (H13, H14)
 
 | Método | Ruta | Descripción | Roles |
 |---|---|---|---|
 | POST | /api/v1/comunicados | Publica (o programa, si la fecha es futura) un comunicado para todos o por torres | Administrador |
 | GET | /api/v1/comunicados | Comunicados publicados, programados y expirados | Administrador |
+| GET | /api/v1/comunicados/mios?archivo=&pagina= | Comunicados que le aplican al residente, 20 por página, del más reciente al más antiguo | Residente |
+| GET | /api/v1/comunicados/no-leidos/conteo | Cuántos comunicados vigentes no ha abierto el residente | Residente |
+| GET | /api/v1/comunicados/mios/:id | Detalle de un comunicado; lo marca como leído | Residente |
 
-Errores: 400 campos fuera de rango, “Selecciona los destinatarios” o “La
+Errores (H13): 400 campos fuera de rango, “Selecciona los destinatarios” o “La
 expiración debe ser posterior a la publicación”; 404 “La torre no existe”.
+
+Reglas de H14:
+
+- Un comunicado le aplica al residente si es para todo el condominio o para
+  alguna torre de sus unidades. Las torres salen de la sesión, nunca del cliente.
+- `archivo=false` (por defecto): `PUBLICADO` sin expiración o con expiración
+  futura. `archivo=true`: `EXPIRADO`, o `PUBLICADO` cuya `fecha_expiracion` ya
+  pasó aunque la tarea de 5 minutos todavía no lo haya marcado.
+- Lista: `{ datos: [{ id, titulo, categoria, fechaPublicacion, leido }], total, pagina }`.
+- Conteo: `{ noLeidos }`, solo de la pestaña principal.
+- Detalle: `{ id, titulo, contenido, categoria, fechaPublicacion, fechaExpiracion, archivado, leido: true }`.
+  Abrirlo de nuevo no crea otra lectura.
+- Errores: 400 “archivo debe ser true o false” o “pagina debe ser un número
+  entero mayor o igual a 1”; 404 “Comunicado no encontrado” si no existe, está
+  programado, es de otra torre o el enlace está mal formado.
 
 ### Módulo 10: Reportes financieros y analíticos (H19)
 
