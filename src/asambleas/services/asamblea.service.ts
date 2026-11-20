@@ -27,6 +27,7 @@ import {
   VotoInvalidoError,
 } from '../errors/index.js';
 import { AsambleaRepository, type VotoRegistrado } from '../repositories/index.js';
+import { calcularParticipacion } from '../participacion.js';
 
 const MSG_CIERRE = 'El cierre debe ser al menos 1 hora después de la apertura';
 const MSG_PUBLICAR = 'Publica con al menos 48 horas de anticipación';
@@ -222,7 +223,7 @@ export class AsambleaService {
     const unidadesQueVotaron = new Set<string>(
       (asamblea.votos as Array<{ unidadId: string }>).map((v) => v.unidadId),
     ).size;
-    const participacion = totalUnidades > 0 ? Math.round((unidadesQueVotaron / totalUnidades) * 1000) / 10 : 0;
+    const participacion = calcularParticipacion(unidadesQueVotaron, totalUnidades);
 
     const temas: TemaResultadoDto[] = asamblea.temas.map((tema) => {
       const opciones = tema.opciones.map((op) => ({

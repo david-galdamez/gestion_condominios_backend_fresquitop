@@ -59,7 +59,7 @@ export class MorosidadRepository {
       await this.verificarTorreExiste(torreId);
     }
 
-    const [filas, resumenRows] = await Promise.all([
+    const [filas, resumen] = await Promise.all([
       this.prisma.$queryRaw<FilaUnidadMorosa[]>`
         SELECT
           u.id,
@@ -77,25 +77,32 @@ export class MorosidadRepository {
         ORDER BY MIN(c.fecha_vencimiento) ASC, unidad ASC
         LIMIT ${limit} OFFSET ${offset}
       `,
-      this.prisma.$queryRaw<ResumenMorosidad[]>`
-        SELECT
-          COALESCE(ROUND(SUM(c.monto), 2)::float, 0) AS "totalMora",
-          COUNT(DISTINCT u.id)::int AS "unidadesMorosas"
-        FROM cuota c
-        JOIN unidad u ON u.id = c.unidad_id
-        JOIN torre t ON t.id = u.torre_id
-        WHERE c.estado = 'VENCIDA'
-          AND u.activa = true
-          AND (${torreId}::uuid IS NULL OR u.torre_id = ${torreId}::uuid)
-      `,
+      this.resumenMorosidad(torreId),
     ]);
 
-    const resumen = resumenRows[0] ?? { totalMora: 0, unidadesMorosas: 0 };
+    return { ...resumen, filas };
+  }
 
+  /**
+   * Monto en mora y unidades morosas (activas con al menos una cuota VENCIDA).
+   * Es la fuente única de estas cifras: H22 las muestra y el panel H19 las reutiliza.
+   */
+  async resumenMorosidad(torreId: string | null = null): Promise<ResumenMorosidad> {
+    const rows = await this.prisma.$queryRaw<ResumenMorosidad[]>`
+      SELECT
+        COALESCE(ROUND(SUM(c.monto), 2)::float, 0) AS "totalMora",
+        COUNT(DISTINCT u.id)::int AS "unidadesMorosas"
+      FROM cuota c
+      JOIN unidad u ON u.id = c.unidad_id
+      JOIN torre t ON t.id = u.torre_id
+      WHERE c.estado = 'VENCIDA'
+        AND u.activa = true
+        AND (${torreId}::uuid IS NULL OR u.torre_id = ${torreId}::uuid)
+    `;
+    const resumen = rows[0] ?? { totalMora: 0, unidadesMorosas: 0 };
     return {
       totalMora: Number(resumen.totalMora),
       unidadesMorosas: Number(resumen.unidadesMorosas),
-      filas,
     };
   }
 }

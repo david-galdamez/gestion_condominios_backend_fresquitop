@@ -86,5 +86,5 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
-| H19 | Ver la salud del condominio en un panel | David Galdamez | [card](https://trello.com/c/SRTcy34I) | — | Pendiente: depende de H04 (reservas) y H11/H27 (asambleas), que aún no existen |
+| H19 | Ver la salud del condominio en un panel | David Galdamez | [card](https://trello.com/c/SRTcy34I) | — | En revisión: rama `feature/📊-H19-panel-salud-condominio` en backend y frontend |
 | H20 | Exportar el reporte para la mesa directiva | Pablo Castellón | [card](https://trello.com/c/ZfXrgdHI) | — | Pendiente: depende de H19 |

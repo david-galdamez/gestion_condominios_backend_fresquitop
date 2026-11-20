@@ -73,6 +73,8 @@
       "@Prisma/*": ["./src/prisma/*/index.ts"],
       "@Common/*": ["./src/common/*/index.ts"],
       "@Config": ["./src/config/index.ts"],
+      "@Panel": ["./src/panel/index.ts"],
+      "@Panel/*": ["./src/panel/*/index.ts"],
       "@PrismaClient": ["./src/generated/prisma/client.ts"],
       "@Reportes": ["./src/reportes/index.ts"],
       "@Reportes/*": ["./src/reportes/*/index.ts"],
