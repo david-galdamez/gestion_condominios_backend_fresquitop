@@ -1,4 +1,4 @@
-﻿import type { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { hoyEnZonaNegocio, sumarDias } from '@Common/fechas';
 import { PrismaService } from '@Prisma/services';

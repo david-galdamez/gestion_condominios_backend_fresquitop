@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -22,6 +22,7 @@ import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
 import { ReservasModule } from '@Reservas';
 import { AsambleasModule } from './asambleas/index.js';
+import { PanelModule } from '@Panel';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -53,6 +54,7 @@ import { validateEnv } from '@Config';
     ReportesModule,
     ComunicadosModule,
     AsambleasModule,
+    PanelModule,
   ],
   providers: [
     {

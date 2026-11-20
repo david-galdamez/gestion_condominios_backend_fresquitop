@@ -43,4 +43,10 @@ export class MorosidadService {
       throw error;
     }
   }
+
+  /** Cifras globales de mora, compartidas con el panel de salud (H19). */
+  async resumen(): Promise<{ totalMora: number; unidadesMorosas: number }> {
+    const { totalMora, unidadesMorosas } = await this.morosidadRepository.resumenMorosidad();
+    return { totalMora: Number(totalMora.toFixed(2)), unidadesMorosas };
+  }
 }

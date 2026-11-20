@@ -106,3 +106,16 @@ cancelar”.
 
 Errores: 400 campos fuera de rango, “Selecciona los destinatarios” o “La
 expiración debe ser posterior a la publicación”; 404 “La torre no existe”.
+
+### Módulo 10: Reportes financieros y analíticos (H19)
+
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| GET | /api/v1/admin/panel?desde=&hasta= | Panel de salud: mora, ocupación por área, incidencias y participación, con variación contra el periodo anterior | Administrador |
+
+`desde` y `hasta` son fechas `YYYY-MM-DD` obligatorias, con `desde` ≤ `hasta` y un máximo de 366 días.
+Errores: 400 fechas ausentes, invertidas o rango mayor; 401 sin sesión; 403 rol sin permiso.
+La mora se calcula al día de hoy con las mismas consultas que H22; la participación usa la fórmula de H27.
+`cambio` es `(actual − anterior) ÷ anterior × 100` contra el periodo anterior de igual duración y es `null`
+("Sin base de comparación") cuando el anterior vale 0.
+

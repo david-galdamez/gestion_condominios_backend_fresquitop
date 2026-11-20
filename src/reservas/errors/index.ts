@@ -1,1 +1,1 @@
-﻿export * from './reserva-horario-ocupado.error.js';
+export * from './reserva-horario-ocupado.error.js';

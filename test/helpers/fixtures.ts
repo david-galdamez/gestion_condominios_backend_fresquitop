@@ -1,4 +1,4 @@
-﻿import type { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import request from 'supertest';
 import { PrismaService } from '@Prisma/services';

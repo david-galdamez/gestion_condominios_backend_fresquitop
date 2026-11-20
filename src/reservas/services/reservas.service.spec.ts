@@ -1,4 +1,4 @@
-﻿import { ConflictException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { EstadoReserva } from '@PrismaClient';
 import type { AreaRepository } from '@Areas/repositories';
 import type { UnidadRepository } from '@Unidades/repositories';
