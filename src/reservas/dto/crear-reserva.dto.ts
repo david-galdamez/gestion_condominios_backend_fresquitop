@@ -1,4 +1,4 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Matches, IsUUID, IsInt, Min, registerDecorator, type ValidationArguments } from 'class-validator';
 import { FECHA_ISO, EsFechaReal } from '@Common/fechas';
 
