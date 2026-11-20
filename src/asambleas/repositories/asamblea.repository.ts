@@ -5,7 +5,7 @@ import type { CrearAsambleaDto } from '../dto/crear-asamblea.dto.js';
 
 @Injectable()
 export class AsambleaRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   crear(creadaPorId: string, dto: CrearAsambleaDto) {
     return this.prisma.asamblea.create({
@@ -45,5 +45,42 @@ export class AsambleaRepository {
       data: { estado: EstadoAsamblea.PUBLICADA, publicadaEn: new Date() },
     });
     return count === 1;
+  }
+
+  async obtenerDatosResultados(id: string) {
+    // El include ya trae 'votos' y los temas/opciones.
+    return this.prisma.asamblea.findUnique({
+      where: { id },
+      include: {
+        votos: { select: { unidadId: true } },
+        temas: {
+          orderBy: { orden: 'asc' },
+          include: {
+            opciones: {
+              orderBy: { orden: 'asc' },
+              include: { _count: { select: { votos: true } } }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  async buscarComprobante(codigo: string) {
+    return this.prisma.voto.findUnique({
+      where: { codigoVerificacion: codigo },
+      include: {
+        tema: {
+          include: { asamblea: { select: { titulo: true } } }
+        }
+      }
+    });
+  }
+
+  listar() {
+    return this.prisma.asamblea.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { temas: { include: { opciones: true } } }
+    });
   }
 }

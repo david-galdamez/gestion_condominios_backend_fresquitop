@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Get, Query } from '@nestjs/common';
 import { CurrentUser, Roles } from '@Auth/decorators';
 import { Rol, type User } from '@PrismaClient';
 import { AsambleaService } from '../services/index.js';
@@ -14,8 +14,27 @@ export class AsambleaController {
     return this.service.crear(user.id, dto);
   }
 
+  @Get()
+  @Roles(Rol.ADMINISTRADOR)
+  listar() {
+    return this.service.listar();
+  }
+
   @Post(':id/publicar')
   publicar(@Param('id') id: string) {
     return this.service.publicar(id);
+  }
+
+  // ⚠️ IMPORTANTE: 'comprobantes/verificar' debe ir ANTES que ':id/resultados'
+  @Get('comprobantes/verificar')
+  @Roles(Rol.ADMINISTRADOR)
+  verificarComprobante(@Query('codigo') codigo: string) {
+    return this.service.verificarComprobante(codigo);
+  }
+
+  @Get(':id/resultados')
+  @Roles(Rol.ADMINISTRADOR)
+  obtenerResultados(@Param('id') id: string) {
+    return this.service.obtenerResultados(id);
   }
 }
