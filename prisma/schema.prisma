@@ -1,4 +1,4 @@
-// Documentación: https://www.prisma.io/docs
+﻿// Documentación: https://www.prisma.io/docs
 //
 // La URL de conexión NO vive acá: en Prisma 7 el CLI la lee desde
 // prisma.config.ts y el runtime la recibe vía driver adapter (PrismaPg),
@@ -66,6 +66,8 @@ model User {
   notificacionesRecibidas NotificacionDestinatario[]
   asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
 
+  reservas Reserva[]
+
   @@map("users")
 }
 
@@ -118,6 +120,8 @@ model Unidad {
   pagos          Pago[]
 
   @@index([torreId])
+  reservas Reserva[]
+
   @@map("unidad")
 }
 
@@ -299,9 +303,51 @@ model AreaComun {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  reservas Reserva[]
+
   @@map("area_comun")
 }
 
+enum EstadoReserva {
+  CONFIRMADA
+  CANCELADA
+  FINALIZADA
+
+  @@map("estado_reserva")
+}
+
+// Reserva de un área común (H04). Una reserva cancelada deja libre el horario.
+model Reserva {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Código legible RES-000123; la secuencia se crea en la migración SQL.
+  codigo String @unique @db.VarChar(10)
+
+  areaId String    @map("area_id") @db.Uuid
+  area   AreaComun @relation(fields: [areaId], references: [id], onDelete: Restrict)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Siempre se obtiene del usuario autenticado, nunca del body.
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  // Fecha y horas locales del negocio, almacenadas como date/time sin zona.
+  fecha      DateTime @db.Date
+  horaInicio DateTime @map("hora_inicio") @db.Time(0)
+  horaFin    DateTime @map("hora_fin") @db.Time(0)
+  asistentes Int
+
+  estado      EstadoReserva @default(CONFIRMADA)
+  canceladaEn DateTime?     @map("cancelada_en")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([areaId, fecha])
+  @@index([residenteId, fecha])
+  @@map("reserva")
+}
 // ---------------------------------------------------------------------------
 // H05 · Reportes de incidencias y mantenimiento
 // ---------------------------------------------------------------------------
@@ -752,3 +798,4 @@ model OpcionTema {
   @@unique([temaId, orden])
   @@map("opcion_tema")
 }
+

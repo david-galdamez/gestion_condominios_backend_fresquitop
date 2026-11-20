@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -20,6 +20,7 @@ import { PerfilDirectorioModule } from '@PerfilDirectorio';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
+import { ReservasModule } from '@Reservas';
 import { AsambleasModule } from './asambleas/index.js';
 import { validateEnv } from '@Config';
 

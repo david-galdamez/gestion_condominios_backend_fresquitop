@@ -1,4 +1,4 @@
-{
+﻿{
 "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
@@ -52,7 +52,9 @@
       "@Cuotas": ["./src/cuotas/index.ts"],
       "@Cuotas/*": ["./src/cuotas/*/index.ts"],
       "@Areas": ["./src/areas/index.ts"],
+      "@Reservas": ["./src/reservas/index.ts"],
       "@Areas/*": ["./src/areas/*/index.ts"],
+      "@Reservas/*": ["./src/reservas/*/index.ts"],
       "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
       "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
       "@Pagos": ["./src/pagos/index.ts"],
@@ -81,3 +83,4 @@
     }
   }
 }
+
