@@ -20,6 +20,7 @@ import { PerfilDirectorioModule } from '@PerfilDirectorio';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
+import { AsambleasModule } from './asambleas/index.js';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -49,6 +50,7 @@ import { validateEnv } from '@Config';
     AreasModule,
     ReportesModule,
     ComunicadosModule,
+    AsambleasModule,
   ],
   providers: [
     {
