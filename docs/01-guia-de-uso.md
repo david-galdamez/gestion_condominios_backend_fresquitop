@@ -13,7 +13,7 @@ no le corresponde ve “No tienes permiso para esta acción”.
 
 | Rol | Qué puede hacer |
 |---|---|
-| Residente | Consultar el estado de cuenta de sus unidades (H01), pre-autorizar, editar y cancelar visitas (H07, H07b), reportar problemas con fotos y ver sus reportes (H05), ver las áreas comunes activas (H03). |
+| Residente | Consultar el estado de cuenta de sus unidades (H01), pre-autorizar, editar y cancelar visitas (H07, H07b), reportar problemas con fotos y ver sus reportes (H05), ver las áreas comunes activas (H03), leer los comunicados de su condominio y de su torre (H14). |
 | Administrador | Configurar áreas comunes (H03), consultar unidades morosas (H22), publicar y programar comunicados para todo el condominio o por torre (H13). |
 | Seguridad | Registrar la llegada de paquetes con foto y avisar a la unidad (H09), consultar los paquetes en portería. |
 
@@ -92,3 +92,15 @@ En **Mis visitas**, pulsar **Cancelar** en una autorización Vigente y confirmar
 
 Cada 5 minutos una tarea publica los programados (y envía el aviso “Nuevo
 comunicado: {título}”) y pasa a **Expirado** los que llegaron a su expiración.
+
+#### Ver mis comunicados (Residente, H14)
+
+1. Abrir **Comunicados**. El contador muestra cuántos no se han leído; se
+   actualiza al abrir la pantalla y cada 30 segundos.
+2. La pestaña principal lista los comunicados vigentes para todo el condominio
+   y para la torre del residente, del más reciente al más antiguo, 20 por
+   página. Los no leídos llevan una marca.
+3. Abrir un comunicado muestra su contenido y lo marca como leído.
+4. La pestaña **Archivo** lista los comunicados expirados.
+5. Un comunicado de otra torre no aparece; si se abre por su enlace se ve
+   “Comunicado no encontrado”.

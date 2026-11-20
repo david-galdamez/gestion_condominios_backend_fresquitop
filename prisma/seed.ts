@@ -347,10 +347,33 @@ async function main() {
       fechaExpiracion: hora(-10, '10:00'),
       estado: EstadoComunicado.EXPIRADO,
     },
+    // H14: con "Corte de agua" quedan 3 publicados (2 para todos y 1 para la
+    // Torre B) y 1 expirado. Residente Dos (A-102, Torre A) no ve el de la
+    // Torre B; Residente Uno sí, porque también tiene B-205.
+    {
+      titulo: 'Asamblea general de propietarios',
+      contenido: 'La asamblea general será el próximo jueves a las 19:00 en el salón social. Se tratará el presupuesto 2027.',
+      categoria: CategoriaComunicado.AVISO_GENERAL,
+      torres: [] as string[],
+      fechaPublicacion: hora(-3, '18:00'),
+      fechaExpiracion: null,
+      estado: EstadoComunicado.PUBLICADO,
+    },
+    {
+      titulo: 'Fumigación en la Torre B',
+      contenido: 'El miércoles se fumigarán los pasillos de la Torre B de 7:00 a 10:00. Mantener puertas cerradas.',
+      categoria: CategoriaComunicado.MANTENIMIENTO,
+      torres: ['Torre B'],
+      fechaPublicacion: hora(-2, '10:00'),
+      fechaExpiracion: hora(10, '10:00'),
+      estado: EstadoComunicado.PUBLICADO,
+    },
   ];
+  // Borrar el comunicado borra en cascada sus destinos y lecturas.
   await prisma.comunicado.deleteMany({ where: { titulo: { in: comunicadosSeed.map((c) => c.titulo) } } });
+  const comunicadoIds = new Map<string, string>();
   for (const { torres, ...c } of comunicadosSeed) {
-    await prisma.comunicado.create({
+    const creado = await prisma.comunicado.create({
       data: {
         ...c,
         paraTodos: torres.length === 0,
@@ -358,7 +381,14 @@ async function main() {
         destinos: { create: torres.map((t) => ({ torreId: torreIds.get(t)! })) },
       },
     });
+    comunicadoIds.set(c.titulo, creado.id);
   }
+
+  // Lecturas (H14): el residente de A-101 ya leyó "Corte de agua programado".
+  const residenteUno = await prisma.user.findUniqueOrThrow({ where: { email: 'residente1@example.com' } });
+  await prisma.lecturaComunicado.create({
+    data: { comunicadoId: comunicadoIds.get('Corte de agua programado')!, residenteId: residenteUno.id },
+  });
 
   // Perfil de directorio (H15): Residente Uno visible con nombre y unidad;
   // Residente Dos oculto (estado por defecto). Los demás no tienen fila y se

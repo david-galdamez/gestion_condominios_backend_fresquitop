@@ -123,6 +123,11 @@ erDiagram
         uuid comunicado_id PK, FK
         uuid torre_id PK, FK
     }
+    LECTURA_COMUNICADO {
+        uuid comunicado_id PK, FK
+        uuid residente_id PK, FK
+        timestamp leido_en
+    }
     REFRESH_TOKENS {
         uuid id PK
         string token_hash UK
@@ -150,3 +155,4 @@ erDiagram
 | `historial_reporte` | Trazabilidad de cada cambio de estado de un reporte. | `estado`, `cambiado_por_id`, `created_at`. |
 | `comunicado` | Comunicado del administrador (H13). | `categoria`, `para_todos`, `fecha_publicacion`, `fecha_expiracion` (CHECK: posterior a la publicación), `estado`, `autor_id`. |
 | `comunicado_destino` | Torres destino de un comunicado que no es para todos. | PK compuesta (`comunicado_id`, `torre_id`). |
+| `lectura_comunicado` | Comunicados que cada residente ya abrió (H14). Sin fila = no leído. | PK compuesta (`comunicado_id`, `residente_id`): una sola lectura por residente; índice `ix_lectura_residente`; `leido_en`. Reversión en `down.sql`. |
