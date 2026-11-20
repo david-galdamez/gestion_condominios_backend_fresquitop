@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { NotificacionService } from '@Notificaciones/services';
 import { PrismaService } from '@Prisma/services';
 import { Rol } from '@PrismaClient';
 import { crearApp } from './helpers/app.js';
@@ -97,6 +98,42 @@ describe('Paquetes (e2e)', () => {
       const b = await registrar(tSeg, campos()).expect(201);
       expect(a.body.guia).toBeNull();
       expect(a.body.codigoPaquete).not.toBe(b.body.codigoPaquete);
+    });
+
+    it('avisa a los residentes activos de la unidad (BE-9.2)', async () => {
+      const { tSeg, campos, a101 } = await escenario();
+      await crearUsuario(prisma, 'r2@test.com', { unidadIds: [a101.id] });
+      const inactivo = await crearUsuario(prisma, 'r3@test.com', { unidadIds: [a101.id] });
+      await prisma.user.update({ where: { id: inactivo.id }, data: { isActive: false } });
+      const otra = await crearUnidad(prisma, a101.torreId, 'B-201');
+      await crearUsuario(prisma, 'otro@test.com', { unidadIds: [otra.id] });
+
+      const res = await registrar(tSeg, campos()).expect(201);
+
+      const aviso = await prisma.notificacion.findFirstOrThrow({
+        where: { referencia: `/paquetes/${res.body.id}` },
+        include: { destinatarios: { include: { residente: true } } },
+      });
+      expect(aviso).toMatchObject({
+        moduloOrigen: 'PAQUETERIA',
+        titulo: 'Tienes un paquete en portería',
+        mensaje: `DHL · ${res.body.codigoPaquete}`,
+        destinoTipo: 'UNIDAD',
+        destinoId: a101.id,
+      });
+      const correos = aviso.destinatarios.map((d) => d.residente.email).sort((a, b) => a.localeCompare(b));
+      expect(correos).toEqual(['r1@test.com', 'r2@test.com']);
+      expect(aviso.destinatarios.every((d) => !d.leida)).toBe(true);
+    });
+
+    it('si el aviso falla, el paquete queda registrado igual (201)', async () => {
+      const { tSeg, campos } = await escenario();
+      const enviar = vi.spyOn(app.get(NotificacionService), 'enviar').mockRejectedValueOnce(new Error('caído'));
+      const res = await registrar(tSeg, campos()).expect(201);
+      expect(enviar).toHaveBeenCalledTimes(1);
+      expect(await prisma.paquete.count()).toBe(1);
+      expect(await prisma.notificacion.count({ where: { referencia: `/paquetes/${res.body.id}` } })).toBe(0);
+      enviar.mockRestore();
     });
 
     it('foto ausente, PDF (aunque se llame .jpg) o de más de 5 MB -> 400 con el mensaje', async () => {
