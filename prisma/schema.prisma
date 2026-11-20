@@ -348,16 +348,19 @@ model Reporte {
   ubicacion   String
   descripcion String           @db.VarChar(500)
 
-  // Sin criterio de aceptación en H05: queda con valor por defecto.
-  prioridad PrioridadReporte @default(MEDIA)
-  estado    EstadoReporte    @default(ABIERTO)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  // H06: sin asignar al crearse (NULL); el administrador asigna prioridad y responsable juntos.
+  prioridad   PrioridadReporte?
+  responsable String?           @db.VarChar(60)
+  estado      EstadoReporte     @default(ABIERTO)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
 
   evidencias EvidenciaReporte[]
   historial  HistorialReporte[]
 
   @@index([residenteId, createdAt])
+  @@index([estado, categoria, createdAt])
+  @@index([prioridad, createdAt])
   @@map("reporte")
 }
 
@@ -386,7 +389,8 @@ model HistorialReporte {
   reporteId String  @map("reporte_id") @db.Uuid
   reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
 
-  estado EstadoReporte
+  estado     EstadoReporte
+  comentario String?       @db.VarChar(200)
 
   cambiadoPorId String @map("cambiado_por_id") @db.Uuid
   cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)

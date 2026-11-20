@@ -2,6 +2,8 @@ export const TITULO_MIN = 5;
 export const TITULO_MAX = 80;
 export const DESCRIPCION_MIN = 10;
 export const DESCRIPCION_MAX = 500;
+export const RESPONSABLE_MIN = 3;
+export const RESPONSABLE_MAX = 60;
 
 export const MAX_FOTOS = 5;
 export const MAX_FOTO_BYTES = 5 * 1024 * 1024;
@@ -19,6 +21,10 @@ export const MENSAJE_DESCRIPCION = `La descripción debe tener entre ${DESCRIPCI
 export const MENSAJE_FOTOS = 'Solo JPG o PNG de hasta 5 MB, máximo 5 fotos';
 export const MENSAJE_REPORTE_NO_ENCONTRADO = 'Reporte no encontrado';
 export const MENSAJE_UBICACION_INVALIDA = 'La ubicación no es válida';
+export const MENSAJE_ASIGNACION_INCOMPLETA = 'Asigna prioridad y responsable juntos';
+export const MENSAJE_RESPONSABLE_LONGITUD = `El responsable debe tener entre ${RESPONSABLE_MIN} y ${RESPONSABLE_MAX} caracteres`;
+export const MENSAJE_PRIORIDAD_INVALIDA = 'La prioridad debe ser ALTA, MEDIA o BAJA';
+export const MENSAJE_REPORTE_YA_RESUELTO = 'No se puede modificar un reporte resuelto';
 
 /** Áreas comunes válidas como ubicación (las torres salen de la tabla `torre`). */
 export const AREAS_COMUNES = [
