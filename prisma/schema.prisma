@@ -64,6 +64,7 @@ model User {
   perfilDirectorio        PerfilDirectorio?
   pagos                   Pago[]
   notificacionesRecibidas NotificacionDestinatario[]
+  comunicadosLeidos       LecturaComunicado[]
   asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
   
   // H12/H27: relación con los votos emitidos
@@ -627,6 +628,7 @@ model Comunicado {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   destinos ComunicadoDestino[]
+  lecturas LecturaComunicado[]
 
   @@index([estado, fechaPublicacion])
   @@map("comunicado")
@@ -643,6 +645,22 @@ model ComunicadoDestino {
   @@id([comunicadoId, torreId])
   @@index([torreId])
   @@map("comunicado_destino")
+}
+
+// H14 · Qué comunicados ya abrió cada residente. Sin fila = no leído. La PK
+// compuesta impide dos lecturas del mismo comunicado por el mismo residente.
+model LecturaComunicado {
+  comunicadoId String     @map("comunicado_id") @db.Uuid
+  comunicado   Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  leidoEn DateTime @default(now()) @map("leido_en")
+
+  @@id([comunicadoId, residenteId])
+  @@index([residenteId], map: "ix_lectura_residente")
+  @@map("lectura_comunicado")
 }
 
 // Privacidad del residente en el directorio (H15). Oculto por defecto; se crea
