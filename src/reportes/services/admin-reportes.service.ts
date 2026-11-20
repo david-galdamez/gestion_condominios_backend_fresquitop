@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { NotificacionService } from '@Notificaciones/services';
 import { API_PREFIX } from '../../app.setup.js';
 import type {
   AdminReporteDetalleDto,
@@ -12,18 +13,28 @@ import type {
   AdminReportesQueryDto,
   AsignacionReporteResponseDto,
   AsignarReporteDto,
+  ResolverReporteDto,
+  ResolverReporteResponseDto,
 } from '@Reportes/dto';
-import { ReporteNotFoundError, ReporteYaResueltoError } from '@Reportes/errors';
+import {
+  ReporteEstadoInvalidoError,
+  ReporteNotFoundError,
+  ReporteYaResueltoError,
+} from '@Reportes/errors';
 import {
   ReporteRepository,
   type ReporteAdminDetalle,
   type ReporteAdminItem,
 } from '@Reportes/repositories';
 import {
+  COMENTARIO_CIERRE_MAX,
+  COMENTARIO_CIERRE_MIN,
   MENSAJE_ASIGNACION_INCOMPLETA,
+  MENSAJE_COMENTARIO_CIERRE,
   MENSAJE_REPORTE_NO_ENCONTRADO,
   MENSAJE_REPORTE_YA_RESUELTO,
   MENSAJE_RESPONSABLE_LONGITUD,
+  MENSAJE_SOLO_EN_PROCESO,
   REPORTES_PAGE_SIZE,
   RESPONSABLE_MAX,
   RESPONSABLE_MIN,
@@ -58,6 +69,8 @@ function aAdminDetalleDto(r: ReporteAdminDetalle): AdminReporteDetalleDto {
   return {
     ...aAdminItemDto(r),
     descripcion: r.descripcion,
+    resueltoEn: r.resueltoEn ? r.resueltoEn.toISOString() : null,
+    comentarioCierre: r.comentarioCierre,
     evidencias: r.evidencias.map((e) => ({
       id: e.id,
       mimeType: e.mimeType,
@@ -81,7 +94,10 @@ function aAdminDetalleDto(r: ReporteAdminDetalle): AdminReporteDetalleDto {
 
 @Injectable()
 export class AdminReportesService {
-  constructor(private readonly reportes: ReporteRepository) {}
+  constructor(
+    private readonly reportes: ReporteRepository,
+    private readonly notificaciones: NotificacionService,
+  ) {}
 
   async listar(query: AdminReportesQueryDto): Promise<AdminReportesPaginaDto> {
     const pagina = query.pagina ?? 1;
@@ -162,5 +178,55 @@ export class AdminReportesService {
       }
       throw error;
     }
+  }
+
+  async resolver(
+    id: string,
+    adminId: string,
+    dto: ResolverReporteDto,
+  ): Promise<ResolverReporteResponseDto> {
+    const comentario = typeof dto?.comentario === 'string' ? dto.comentario.trim() : '';
+
+    if (comentario.length < COMENTARIO_CIERRE_MIN || comentario.length > COMENTARIO_CIERRE_MAX) {
+      throw new BadRequestException(MENSAJE_COMENTARIO_CIERRE);
+    }
+
+    if (!UUID_REGEX.test(id)) {
+      throw new NotFoundException(MENSAJE_REPORTE_NO_ENCONTRADO);
+    }
+
+    let actualizado;
+    try {
+      actualizado = await this.reportes.resolver({
+        reporteId: id,
+        adminId,
+        comentario,
+      });
+    } catch (error) {
+      if (error instanceof ReporteNotFoundError) {
+        throw new NotFoundException(MENSAJE_REPORTE_NO_ENCONTRADO);
+      }
+      if (error instanceof ReporteEstadoInvalidoError) {
+        throw new ConflictException(MENSAJE_SOLO_EN_PROCESO);
+      }
+      throw error;
+    }
+
+    const numero = formatearNumero(actualizado.numero);
+
+    await this.notificaciones.enviar({
+      destinatario: { tipo: 'USUARIO', id: actualizado.residenteId },
+      titulo: `Tu reporte ${numero} fue resuelto`,
+      mensaje: comentario,
+      moduloOrigen: 'INCIDENCIAS',
+      referencia: `/reportes/${numero}`,
+    });
+
+    return {
+      id: actualizado.id,
+      numero,
+      estado: actualizado.estado,
+      resueltoEn: actualizado.resueltoEn!.toISOString(),
+    };
   }
 }
