@@ -1,4 +1,4 @@
-﻿// Documentación: https://www.prisma.io/docs
+// Documentación: https://www.prisma.io/docs
 //
 // La URL de conexión NO vive acá: en Prisma 7 el CLI la lee desde
 // prisma.config.ts y el runtime la recibe vía driver adapter (PrismaPg),

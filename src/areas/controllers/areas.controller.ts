@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -11,8 +11,16 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser, Roles } from '@Auth/decorators';
-import { AreasService } from '@Areas/services';
-import { AreaDto, CambiarEstadoAreaDto, GuardarAreaDto, ListaAreasResponseDto } from '@Areas/dto';
+import { AreasService, DisponibilidadService } from '@Areas/services';
+import {
+  AreaDto,
+  CambiarEstadoAreaDto,
+  DisponibilidadDto,
+  DisponibilidadQueryDto,
+  GuardarAreaDto,
+  ListaAreasResponseDto,
+  MSG_FECHA_DISPONIBILIDAD,
+} from '@Areas/dto';
 import { Rol, type User } from '@PrismaClient';
 
 @ApiTags('areas')
@@ -21,7 +29,10 @@ import { Rol, type User } from '@PrismaClient';
 @ApiForbiddenResponse({ description: 'Rol no permitido.' })
 @Controller('areas')
 export class AreasController {
-  constructor(private readonly service: AreasService) {}
+  constructor(
+    private readonly service: AreasService,
+    private readonly disponibilidadService: DisponibilidadService,
+  ) {}
 
   @Get()
   // Override del @Roles de la clase: el residente también lista (solo activas).
@@ -30,6 +41,16 @@ export class AreasController {
   @ApiOkResponse({ type: ListaAreasResponseDto })
   listar(@CurrentUser() user: User): Promise<ListaAreasResponseDto> {
     return this.service.listar(user.rol);
+  }
+
+  @Get('disponibilidad')
+  // H23: solo el residente consulta qué bloques están libres antes de reservar.
+  @Roles(Rol.RESIDENTE)
+  @ApiOperation({ summary: 'Bloques de 1 hora Libre u Ocupado de cada área activa en una fecha' })
+  @ApiOkResponse({ type: DisponibilidadDto })
+  @ApiBadRequestResponse({ description: MSG_FECHA_DISPONIBILIDAD })
+  disponibilidad(@Query() query: DisponibilidadQueryDto): Promise<DisponibilidadDto> {
+    return this.disponibilidadService.consultar(query.fecha);
   }
 
   @Post()
