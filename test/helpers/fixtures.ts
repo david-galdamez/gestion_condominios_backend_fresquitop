@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common';
+﻿import type { INestApplication } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import request from 'supertest';
 import { PrismaService } from '@Prisma/services';
@@ -9,7 +9,7 @@ export const PASSWORD = 'Demo1234!';
 /** Vacía todas las tablas de negocio; CASCADE resuelve el orden de las FK. */
 export async function limpiarTablas(prisma: PrismaService): Promise<void> {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE registro_acceso, aviso_cuota, ejecucion_generacion, configuracion_cuota, area_comun, autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
+    'TRUNCATE TABLE reserva, registro_acceso, aviso_cuota, ejecucion_generacion, configuracion_cuota, area_comun, autorizacion_visita, cuota, usuario_unidad, unidad, torre, refresh_tokens, users CASCADE',
   );
 }
 
@@ -120,3 +120,4 @@ export async function login(app: INestApplication, email: string): Promise<strin
     .expect(200);
   return res.body.accessToken as string;
 }
+
