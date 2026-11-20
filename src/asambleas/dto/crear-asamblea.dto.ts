@@ -15,8 +15,8 @@ export class TemaDto {
   titulo!: string;
 
   @IsArray()
-  @ArrayMinSize(2, { message: 'Mínimo 2 opciones por tema' })
-  @ArrayMaxSize(10, { message: 'Máximo 10 opciones por tema' })
+  @ArrayMinSize(2, { message: 'MÃ­nimo 2 opciones por tema' })
+  @ArrayMaxSize(10, { message: 'MÃ¡ximo 10 opciones por tema' })
   @ValidateNested({ each: true })
   @Type(() => OpcionDto)
   opciones!: OpcionDto[];
@@ -25,23 +25,23 @@ export class TemaDto {
 export class CrearAsambleaDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
-  @Length(5, 100, { message: 'El título debe tener entre 5 y 100 caracteres' })
+  @Length(5, 100, { message: 'El tÃ­tulo debe tener entre 5 y 100 caracteres' })
   titulo!: string;
 
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
-  @Length(1, 1000, { message: 'La descripción no puede superar los 1000 caracteres' })
+  @Length(1, 1000, { message: 'La descripciÃ³n no puede superar los 1000 caracteres' })
   descripcion!: string;
 
-  @IsDateString({}, { message: 'La fecha de apertura no es válida' })
+  @IsDateString({}, { message: 'La fecha de apertura no es vÃ¡lida' })
   fechaApertura!: string;
 
-  @IsDateString({}, { message: 'La fecha de cierre no es válida' })
+  @IsDateString({}, { message: 'La fecha de cierre no es vÃ¡lida' })
   fechaCierre!: string;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Debe haber al menos 1 tema' })
-  @ArrayMaxSize(10, { message: 'Máximo 10 temas' })
+  @ArrayMaxSize(10, { message: 'MÃ¡ximo 10 temas' })
   @ValidateNested({ each: true })
   @Type(() => TemaDto)
   temas!: TemaDto[];
