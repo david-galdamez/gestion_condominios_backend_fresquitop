@@ -746,3 +746,447 @@ gestion_condominios_backend_fresquitop
 └─ vitest.config.ts
 
 ```
+```
+gestion_condominios_backend_fresquitop
+├─ .dockerignore
+├─ .oxlintrc.json
+├─ .prettierignore
+├─ .prettierrc
+├─ docker-compose.yml
+├─ Dockerfile
+├─ docs
+│  ├─ 01-guia-de-uso.md
+│  ├─ 02-arquitectura.md
+│  ├─ 03-modelo-de-datos.md
+│  ├─ 04-api.md
+│  ├─ 05-instalacion-local.md
+│  ├─ 06-despliegue.md
+│  ├─ 07-forma-de-trabajo.md
+│  ├─ 08-historias.md
+│  └─ 09-problemas-conocidos.md
+├─ nest-cli.json
+├─ package-lock.json
+├─ package.json
+├─ prisma
+│  ├─ migrations
+│  │  ├─ 20260920172640_init
+│  │  │  └─ migration.sql
+│  │  ├─ 20260927163851_rename_username_to_email
+│  │  │  └─ migration.sql
+│  │  ├─ 20261104031638_roles_torres_unidades
+│  │  │  └─ migration.sql
+│  │  ├─ 20261104224235_cuotas
+│  │  │  └─ migration.sql
+│  │  ├─ 20261105023950_autorizaciones_visita
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109040000_areas_comunes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109050000_paquetes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109062747_h05_reportes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261111010912_h02_generacion_cuotas
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261111210000_h08_registro_acceso
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261117180000_h07b_auditoria_autorizacion
+│  │  │  └─ migration.sql
+│  │  ├─ 20261117190000_h13_comunicados
+│  │  │  └─ migration.sql
+│  │  ├─ 20261118000000_perfil_directorio
+│  │  │  └─ migration.sql
+│  │  ├─ 20261118010000_pagos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261119000000_h18_notificaciones
+│  │  │  └─ migration.sql
+│  │  └─ migration_lock.toml
+│  ├─ schema.prisma
+│  └─ seed.ts
+├─ prisma.config.ts
+├─ README.md
+├─ src
+│  ├─ accesos
+│  │  ├─ accesos.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ accesos.controller.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ porteria-autorizaciones.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ acceso-response.dto.ts
+│  │  │  ├─ buscar.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ registrar-entrada.dto.spec.ts
+│  │  │  └─ registrar-entrada.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ acceso.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ accesos.service.spec.ts
+│  │     ├─ accesos.service.ts
+│  │     └─ index.ts
+│  ├─ app.module.ts
+│  ├─ app.setup.ts
+│  ├─ archivos
+│  │  ├─ archivos.module.ts
+│  │  ├─ index.ts
+│  │  └─ services
+│  │     ├─ archivos.service.spec.ts
+│  │     ├─ archivos.service.ts
+│  │     └─ index.ts
+│  ├─ areas
+│  │  ├─ areas.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ areas.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ area-response.dto.ts
+│  │  │  ├─ cambiar-estado-area.dto.ts
+│  │  │  ├─ guardar-area.dto.spec.ts
+│  │  │  ├─ guardar-area.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ errors
+│  │  │  ├─ area-nombre-duplicado.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ area.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ areas.service.spec.ts
+│  │     ├─ areas.service.ts
+│  │     └─ index.ts
+│  ├─ auth
+│  │  ├─ auth.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ auth.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ decorators
+│  │  │  ├─ current-user.decorator.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ public.decorator.ts
+│  │  │  └─ roles.decorator.ts
+│  │  ├─ dto
+│  │  │  ├─ auth-response.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ login.dto.ts
+│  │  │  └─ refresh-token.dto.ts
+│  │  ├─ guards
+│  │  │  ├─ index.ts
+│  │  │  ├─ jwt-auth.guard.ts
+│  │  │  ├─ roles.guard.spec.ts
+│  │  │  └─ roles.guard.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ refresh-token.repository.ts
+│  │  ├─ services
+│  │  │  ├─ auth.service.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ token.service.ts
+│  │  └─ types
+│  │     ├─ auth.types.ts
+│  │     └─ index.ts
+│  ├─ autorizaciones
+│  │  ├─ autorizaciones.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ autorizaciones.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ autorizacion-response.dto.ts
+│  │  │  ├─ crear-autorizacion.dto.spec.ts
+│  │  │  ├─ crear-autorizacion.dto.ts
+│  │  │  ├─ editar-autorizacion.dto.spec.ts
+│  │  │  ├─ editar-autorizacion.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ autorizacion.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ autorizaciones-vencimiento.service.spec.ts
+│  │     ├─ autorizaciones-vencimiento.service.ts
+│  │     ├─ autorizaciones.service.spec.ts
+│  │     ├─ autorizaciones.service.ts
+│  │     └─ index.ts
+│  ├─ common
+│  │  ├─ decorators
+│  │  │  ├─ index.ts
+│  │  │  └─ is-normalized-email.decorator.ts
+│  │  └─ fechas
+│  │     ├─ fechas.decorators.ts
+│  │     ├─ fechas.spec.ts
+│  │     ├─ fechas.ts
+│  │     └─ index.ts
+│  ├─ comunicados
+│  │  ├─ comunicados.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ comunicados.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ comunicado-response.dto.ts
+│  │  │  ├─ crear-comunicado.dto.spec.ts
+│  │  │  ├─ crear-comunicado.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ comunicado.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ comunicados-publicacion.service.ts
+│  │     ├─ comunicados.service.spec.ts
+│  │     ├─ comunicados.service.ts
+│  │     └─ index.ts
+│  ├─ config
+│  │  ├─ env.validation.ts
+│  │  └─ index.ts
+│  ├─ cuotas
+│  │  ├─ controllers
+│  │  │  ├─ cuotas.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ cuotas.module.ts
+│  │  ├─ dto
+│  │  │  ├─ configuracion-response.dto.ts
+│  │  │  ├─ cuotas-dto.spec.ts
+│  │  │  ├─ generacion-response.dto.ts
+│  │  │  ├─ generar-cuotas.dto.ts
+│  │  │  ├─ guardar-configuracion.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ periodos.spec.ts
+│  │  ├─ periodos.ts
+│  │  ├─ repositories
+│  │  │  ├─ configuracion-cuota.repository.ts
+│  │  │  ├─ generacion-cuota.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ aviso-cuotas.service.spec.ts
+│  │     ├─ aviso-cuotas.service.ts
+│  │     ├─ cuotas.service.spec.ts
+│  │     ├─ cuotas.service.ts
+│  │     ├─ generacion-automatica.service.ts
+│  │     └─ index.ts
+│  ├─ estado-cuenta
+│  │  ├─ controllers
+│  │  │  ├─ estado-cuenta.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ estado-cuenta-query.dto.spec.ts
+│  │  │  ├─ estado-cuenta-query.dto.ts
+│  │  │  ├─ estado-cuenta-response.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ estado-cuenta.module.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ cuota.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ cuotas-vencimiento.service.spec.ts
+│  │     ├─ cuotas-vencimiento.service.ts
+│  │     ├─ estado-cuenta.service.spec.ts
+│  │     ├─ estado-cuenta.service.ts
+│  │     └─ index.ts
+│  ├─ health
+│  │  ├─ controllers
+│  │  │  ├─ health.controller.spec.ts
+│  │  │  ├─ health.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ health.module.ts
+│  │  ├─ index.ts
+│  │  └─ services
+│  │     ├─ health.service.ts
+│  │     └─ index.ts
+│  ├─ main.ts
+│  ├─ morosidad
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad.controller.spec.ts
+│  │  │  └─ morosidad.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad-query.dto.spec.ts
+│  │  │  ├─ morosidad-query.dto.ts
+│  │  │  └─ morosidad-response.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  └─ torre-not-found.error.ts
+│  │  ├─ index.ts
+│  │  ├─ morosidad.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad.repository.spec.ts
+│  │  │  └─ morosidad.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ morosidad.service.spec.ts
+│  │     └─ morosidad.service.ts
+│  ├─ notificaciones
+│  │  ├─ errors
+│  │  │  ├─ dato-invalido.error.ts
+│  │  │  ├─ destino-no-existe.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ notificaciones.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ notificacion.repository.ts
+│  │  ├─ services
+│  │  │  ├─ index.ts
+│  │  │  ├─ notificacion-temporal.service.ts
+│  │  │  ├─ notificacion.service.spec.ts
+│  │  │  └─ notificacion.service.ts
+│  │  └─ types
+│  │     ├─ index.ts
+│  │     └─ notificacion.types.ts
+│  ├─ pagos
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ pagos.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ pagar-cuotas.dto.spec.ts
+│  │  │  ├─ pagar-cuotas.dto.ts
+│  │  │  ├─ pago-response.dto.ts
+│  │  │  └─ pendientes-query.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ clave-idempotencia-repetida.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ pagos.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ pago.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ pagos.service.spec.ts
+│  │     ├─ pagos.service.ts
+│  │     ├─ pasarela-simulada.service.spec.ts
+│  │     └─ pasarela-simulada.service.ts
+│  ├─ paquetes
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ paquetes.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ paquete-response.dto.ts
+│  │  │  ├─ registrar-paquete.dto.spec.ts
+│  │  │  └─ registrar-paquete.dto.ts
+│  │  ├─ filters
+│  │  │  ├─ foto-demasiado-grande.filter.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ paquetes.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ paquete.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ paquetes.service.spec.ts
+│  │     └─ paquetes.service.ts
+│  ├─ perfil-directorio
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ guardar-perfil-directorio.dto.spec.ts
+│  │  │  ├─ guardar-perfil-directorio.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio-response.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ perfil-directorio.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ perfil-directorio.service.spec.ts
+│  │     └─ perfil-directorio.service.ts
+│  ├─ prisma
+│  │  ├─ index.ts
+│  │  ├─ prisma.module.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     └─ prisma.service.ts
+│  ├─ reportes
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ reportes.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ create-reporte.dto.spec.ts
+│  │  │  ├─ create-reporte.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ reporte-response.dto.ts
+│  │  │  └─ reportes-query.dto.ts
+│  │  ├─ filters
+│  │  │  ├─ foto-demasiado-grande.filter.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ reportes.constants.ts
+│  │  ├─ reportes.module.ts
+│  │  ├─ reportes.types.ts
+│  │  ├─ reportes.utils.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ reporte.repository.ts
+│  │  └─ services
+│  │     ├─ evidencia-storage.service.ts
+│  │     ├─ index.ts
+│  │     ├─ reportes.service.spec.ts
+│  │     └─ reportes.service.ts
+│  ├─ unidades
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  ├─ torres.controller.ts
+│  │  │  └─ unidades.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  └─ unidad-resumen.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ unidad.repository.ts
+│  │  └─ unidades.module.ts
+│  └─ users
+│     ├─ controllers
+│     │  ├─ index.ts
+│     │  └─ users.controller.ts
+│     ├─ dto
+│     │  ├─ create-user.dto.ts
+│     │  ├─ index.ts
+│     │  └─ user-response.dto.ts
+│     ├─ errors
+│     │  ├─ email-already-taken.error.ts
+│     │  └─ index.ts
+│     ├─ index.ts
+│     ├─ repositories
+│     │  ├─ index.ts
+│     │  └─ user.repository.ts
+│     ├─ services
+│     │  ├─ index.ts
+│     │  └─ users.service.ts
+│     └─ users.module.ts
+├─ test
+│  ├─ accesos.e2e-spec.ts
+│  ├─ areas.e2e-spec.ts
+│  ├─ autorizaciones.e2e-spec.ts
+│  ├─ comunicados.e2e-spec.ts
+│  ├─ cuotas.e2e-spec.ts
+│  ├─ estado-cuenta.e2e-spec.ts
+│  ├─ health.e2e-spec.ts
+│  ├─ helpers
+│  │  ├─ app.ts
+│  │  └─ fixtures.ts
+│  ├─ pagos.e2e-spec.ts
+│  ├─ paquetes.e2e-spec.ts
+│  ├─ perfil-directorio.e2e-spec.ts
+│  └─ setup
+│     ├─ env.ts
+│     └─ global-setup.ts
+├─ tsconfig.build.json
+├─ tsconfig.json
+├─ vitest.config.e2e.ts
+└─ vitest.config.ts
+
+```

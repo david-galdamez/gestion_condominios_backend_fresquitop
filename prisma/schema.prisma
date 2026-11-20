@@ -49,21 +49,22 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens          RefreshToken[]
-  unidades               UsuarioUnidad[]
-  autorizacionesVisita   AutorizacionVisita[]  @relation("AutorizacionResidente")
-  autorizacionesEditadas AutorizacionVisita[]  @relation("AutorizacionEditadaPor")
-  reportes               Reporte[]
-  historialReportes      HistorialReporte[]
-  paquetesRecibidos      Paquete[]
-  entradasRegistradas    RegistroAcceso[]      @relation("EntradaRegistradaPor")
-  salidasRegistradas     RegistroAcceso[]      @relation("SalidaRegistradaPor")
-  configuracionesCuota   ConfiguracionCuota[]
-  generacionesCuota      EjecucionGeneracion[]
-  comunicados            Comunicado[]
-  perfilDirectorio       PerfilDirectorio?
-  pagos                  Pago[]
+  refreshTokens           RefreshToken[]
+  unidades                UsuarioUnidad[]
+  autorizacionesVisita    AutorizacionVisita[]       @relation("AutorizacionResidente")
+  autorizacionesEditadas  AutorizacionVisita[]       @relation("AutorizacionEditadaPor")
+  reportes                Reporte[]
+  historialReportes       HistorialReporte[]
+  paquetesRecibidos       Paquete[]
+  entradasRegistradas     RegistroAcceso[]           @relation("EntradaRegistradaPor")
+  salidasRegistradas      RegistroAcceso[]           @relation("SalidaRegistradaPor")
+  configuracionesCuota    ConfiguracionCuota[]
+  generacionesCuota       EjecucionGeneracion[]
+  comunicados             Comunicado[]
+  perfilDirectorio        PerfilDirectorio?
+  pagos                   Pago[]
   notificacionesRecibidas NotificacionDestinatario[]
+  asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
 
   @@map("users")
 }
@@ -691,4 +692,59 @@ model NotificacionDestinatario {
   @@id([notificacionId, residenteId])
   @@index([residenteId, leida])
   @@map("notificacion_destinatario")
+}
+
+// ---------------------------------------------------------------------------
+// H11 - Asambleas y votaciones digitales
+// ---------------------------------------------------------------------------
+
+enum EstadoAsamblea {
+  BORRADOR
+  PUBLICADA
+  ABIERTA
+  CERRADA
+
+  @@map("estado_asamblea")
+}
+
+model Asamblea {
+  id            String         @id @default(uuid()) @db.Uuid
+  titulo        String         @db.VarChar(100)
+  descripcion   String         @db.VarChar(1000)
+  fechaApertura DateTime       @map("fecha_apertura")
+  fechaCierre   DateTime       @map("fecha_cierre")
+  estado        EstadoAsamblea @default(BORRADOR)
+  publicadaEn   DateTime?      @map("publicada_en")
+  creadaPorId   String         @map("creada_por") @db.Uuid
+  creadaPor     User           @relation("AsambleaCreadaPor", fields: [creadaPorId], references: [id], onDelete: Restrict)
+
+  temas     TemaVotacion[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@map("asamblea")
+}
+
+model TemaVotacion {
+  id         String   @id @default(uuid()) @db.Uuid
+  asambleaId String   @map("asamblea_id") @db.Uuid
+  asamblea   Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  titulo     String   @db.VarChar(150)
+  orden      Int
+
+  opciones OpcionTema[]
+
+  @@unique([asambleaId, orden])
+  @@map("tema_votacion")
+}
+
+model OpcionTema {
+  id     String       @id @default(uuid()) @db.Uuid
+  temaId String       @map("tema_id") @db.Uuid
+  tema   TemaVotacion @relation(fields: [temaId], references: [id], onDelete: Cascade)
+  texto  String       @db.VarChar(100)
+  orden  Int
+
+  @@unique([temaId, orden])
+  @@map("opcion_tema")
 }
