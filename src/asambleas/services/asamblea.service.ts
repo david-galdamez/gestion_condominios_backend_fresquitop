@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AsambleaRepository } from '../repositories/index.js';
 import { NotificacionService } from '@Notificaciones/services';
+import { calcularParticipacion } from '../participacion.js';
 import type { CrearAsambleaDto } from '../dto/crear-asamblea.dto.js';
 import { ConflictException } from '@nestjs/common';
 import type { ResultadoAsambleaDto, TemaResultadoDto, ComprobanteVerificacionDto } from '../dto/resultado-asamblea.dto.js';
@@ -71,7 +72,7 @@ export class AsambleaService {
     const unidadesQueVotaron = new Set<string>(
       (asamblea.votos as Array<{ unidadId: string }>).map((v) => v.unidadId)
     ).size;
-    const participacion = totalUnidades > 0 ? Math.round((unidadesQueVotaron / totalUnidades) * 1000) / 10 : 0;
+    const participacion = calcularParticipacion(unidadesQueVotaron, totalUnidades);
 
     const temas: TemaResultadoDto[] = asamblea.temas.map(tema => {
       const opciones = tema.opciones.map(op => ({

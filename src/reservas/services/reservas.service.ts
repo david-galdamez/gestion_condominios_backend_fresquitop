@@ -1,4 +1,4 @@
-﻿import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { aFechaUtc, hoyEnZonaNegocio } from '@Common/fechas';
 import { AreaRepository } from '@Areas/repositories';
 import { UnidadRepository } from '@Unidades/repositories';

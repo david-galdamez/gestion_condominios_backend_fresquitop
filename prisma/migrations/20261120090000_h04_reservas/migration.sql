@@ -1,4 +1,4 @@
-﻿-- H04 · Reservas de áreas comunes
+-- H04 · Reservas de áreas comunes
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 CREATE TYPE "estado_reserva" AS ENUM ('CONFIRMADA', 'CANCELADA', 'FINALIZADA');

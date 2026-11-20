@@ -1,4 +1,4 @@
-﻿// Documentación: https://www.prisma.io/docs
+// Documentación: https://www.prisma.io/docs
 //
 // La URL de conexión NO vive acá: en Prisma 7 el CLI la lee desde
 // prisma.config.ts y el runtime la recibe vía driver adapter (PrismaPg),
@@ -352,6 +352,8 @@ model Reserva {
 
   @@index([areaId, fecha])
   @@index([residenteId, fecha])
+  // H19: ocupación del panel por periodo.
+  @@index([fecha, estado])
   @@map("reserva")
 }
 // ---------------------------------------------------------------------------
@@ -413,6 +415,8 @@ model Reporte {
   @@index([residenteId, createdAt])
   @@index([estado, categoria, createdAt])
   @@index([prioridad, createdAt])
+  // H19: incidencias del panel por periodo.
+  @@index([createdAt, estado])
   @@map("reporte")
 }
 
