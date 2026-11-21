@@ -87,6 +87,31 @@ export class AsambleaRepository {
     return count === 1;
   }
 
+  /** PUBLICADA cuya ventana ya inició (y no ha terminado) pasa a ABIERTA. Devuelve cuántas cambió. */
+  async abrirPublicadasVigentes(ahora: Date): Promise<number> {
+    const { count } = await this.prisma.asamblea.updateMany({
+      where: {
+        estado: EstadoAsamblea.PUBLICADA,
+        fechaApertura: { lte: ahora },
+        fechaCierre: { gt: ahora },
+      },
+      data: { estado: EstadoAsamblea.ABIERTA },
+    });
+    return count;
+  }
+
+  /** PUBLICADA o ABIERTA cuya fecha de cierre ya pasó pasa a CERRADA. Devuelve cuántas cambió. */
+  async cerrarVencidas(ahora: Date): Promise<number> {
+    const { count } = await this.prisma.asamblea.updateMany({
+      where: {
+        estado: { in: [EstadoAsamblea.PUBLICADA, EstadoAsamblea.ABIERTA] },
+        fechaCierre: { lte: ahora },
+      },
+      data: { estado: EstadoAsamblea.CERRADA },
+    });
+    return count;
+  }
+
   async obtenerDatosResultados(id: string) {
     // El include ya trae 'votos' y los temas/opciones.
     return this.prisma.asamblea.findUnique({
