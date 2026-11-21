@@ -290,11 +290,13 @@ npm run db:reset
 
 ### Seed
 
-[prisma/seed.ts](prisma/seed.ts) crea un usuario de prueba mediante `upsert`, así que se puede correr las veces que haga falta:
+[prisma/seed.ts](prisma/seed.ts) crea datos de ejemplo de todos los módulos con `upsert` / ids fijos, así que se puede correr las veces que haga falta. Las contraseñas salen de las variables `SEED_PASSWORD_ADMIN`, `SEED_PASSWORD_RESIDENTE` y `SEED_PASSWORD_SEGURIDAD` de `.env` (con `NODE_ENV=production` son obligatorias).
 
-| Email | Contraseña |
-|---|---|
-| `demo@example.com` | `Demo1234!` |
+| Email | Rol | Contraseña |
+|---|---|---|
+| `admin@example.com` | Administrador | `SEED_PASSWORD_ADMIN` |
+| `residente1@example.com` | Residente (A-101, B-205) | `SEED_PASSWORD_RESIDENTE` |
+| `seguridad@example.com` | Seguridad | `SEED_PASSWORD_SEGURIDAD` |
 
 ---
 
@@ -338,7 +340,7 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 | Método | Ruta | Auth | Código | Descripción |
 |---|---|---|---|---|
 | `GET` | `/` | — | `200` | Health check |
-| `POST` | `/users` | — | `201` | Registra un usuario con email y contraseña |
+| `POST` | `/users` | Bearer · ADMINISTRADOR | `201` | Da de alta un usuario (queda como RESIDENTE) |
 | `POST` | `/auth/login` | — | `200` | Inicia sesión con email y contraseña |
 | `POST` | `/auth/refresh` | — | `200` | Renueva el par de tokens |
 | `POST` | `/auth/logout` | — | `204` | Cierra la sesión |
@@ -359,10 +361,11 @@ Tareas programadas de cuotas (hora de El Salvador): generación automática del 
 BASE=http://localhost:3000/api/v1
 ```
 
-**Registro**
+**Alta de usuario** (solo administrador; `$TOKEN` es su access token)
 
 ```bash
 curl -X POST $BASE/users \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"email":"nestor@example.com","password":"Str0ngPass"}'
 ```
@@ -384,7 +387,7 @@ La contraseña debe tener entre 8 y 72 caracteres, con al menos una minúscula, 
 ```bash
 curl -X POST $BASE/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"demo@example.com","password":"Demo1234!"}'
+  -d '{"email":"residente1@example.com","password":"<SEED_PASSWORD_RESIDENTE de tu .env>"}'
 ```
 
 ```jsonc

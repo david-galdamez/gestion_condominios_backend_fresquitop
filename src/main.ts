@@ -11,11 +11,20 @@ async function bootstrap() {
 
   configureApp(app);
 
+  // CORS solo para el frontend: FRONTEND_URL admite varios orígenes separados por comas.
+  const frontendUrl = configService.get('FRONTEND_URL', { infer: true });
+  const origenes = frontendUrl
+    ? frontendUrl.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean)
+    : configService.get('NODE_ENV', { infer: true }) === 'production'
+      ? []
+      : ['http://localhost:3001'];
+  app.enableCors({ origin: origenes, credentials: true });
+
   app.enableShutdownHooks();
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('SI Backend Boilerplate')
-    .setDescription('API REST con autenticación por usuario y contraseña.')
+    .setTitle('Gestión de Condominios API')
+    .setDescription('API REST para la gestión de condominios: cuotas y pagos, reservas, visitas, paquetería, reportes, comunicados y asambleas.')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

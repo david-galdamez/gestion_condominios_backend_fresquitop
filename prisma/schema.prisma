@@ -272,7 +272,7 @@ model Paquete {
   destinatario String     @db.VarChar(60)
   mensajeria   Mensajeria
   guia         String?    @db.VarChar(40)
-  // Ruta relativa dentro de UPLOAD_DIR, p. ej. "paquetes/<uuid>.jpg".
+  // Clave en la tabla archivo, p. ej. "paquetes/<uuid>.jpg".
   fotoUrl      String     @map("foto_url") @db.VarChar(255)
 
   estado     EstadoPaquete @default(EN_PORTERIA)
@@ -895,4 +895,19 @@ model Exportacion {
   @@index([administradorId])
   @@index([generadaEn])
   @@map("exportacion")
+}
+
+// Archivos subidos (fotos de paquetes y de reportes). Viven en la base porque
+// en Render gratis el disco se borra al apagarse el servicio.
+// `clave` es la ruta relativa de siempre ("paquetes/<uuid>.png"), así las
+// columnas que la guardan (paquete.foto_url, evidencia_reporte.archivo) no cambian.
+model Archivo {
+  id          String   @id @default(uuid()) @db.Uuid
+  clave       String   @unique @db.VarChar(255)
+  mimeType    String   @map("mime_type")
+  tamanoBytes Int      @map("tamano_bytes")
+  datos       Bytes
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("archivo")
 }

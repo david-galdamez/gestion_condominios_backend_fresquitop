@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { NotificacionService } from '@Notificaciones/services';
@@ -89,7 +87,10 @@ describe('Paquetes (e2e)', () => {
       expect(fila.codigoRetiro).toMatch(/^\d{6}$/);
       expect(fila.recibidoPor.email).toBe('seg@test.com');
       expect(fila.fotoUrl).toMatch(/^paquetes\/[0-9a-f-]{36}\.png$/);
-      expect(existsSync(join(resolve(process.env.UPLOAD_DIR ?? 'uploads'), fila.fotoUrl))).toBe(true);
+      const archivo = await prisma.archivo.findUniqueOrThrow({ where: { clave: fila.fotoUrl } });
+      expect(archivo.mimeType).toBe('image/png');
+      expect(archivo.tamanoBytes).toBe(PNG.length);
+      expect(Buffer.from(archivo.datos).equals(PNG)).toBe(true);
     });
 
     it('acepta JPG y guía vacía (queda null); los códigos no se repiten', async () => {
