@@ -46,9 +46,12 @@ describe('Perfil de directorio (e2e)', () => {
     await app.close();
   });
 
-  it('BE-15.2: registrarse crea el perfil de directorio oculto', async () => {
+  it('BE-15.2: dar de alta un usuario crea el perfil de directorio oculto', async () => {
+    await crearUsuario(prisma, 'admin@test.com', { rol: Rol.ADMINISTRADOR });
+    const tAdmin = await login(app, 'admin@test.com');
     const res = await request(app.getHttpServer())
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${tAdmin}`)
       .send({ email: 'nuevo@test.com', password: PASSWORD, nombre: 'Vecino Nuevo' })
       .expect(201);
     const fila = await prisma.perfilDirectorio.findUniqueOrThrow({ where: { residenteId: res.body.id } });

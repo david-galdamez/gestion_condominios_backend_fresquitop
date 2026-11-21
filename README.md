@@ -340,7 +340,7 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 | Método | Ruta | Auth | Código | Descripción |
 |---|---|---|---|---|
 | `GET` | `/` | — | `200` | Health check |
-| `POST` | `/users` | — | `201` | Registra un usuario con email y contraseña |
+| `POST` | `/users` | Bearer · ADMINISTRADOR | `201` | Da de alta un usuario (queda como RESIDENTE) |
 | `POST` | `/auth/login` | — | `200` | Inicia sesión con email y contraseña |
 | `POST` | `/auth/refresh` | — | `200` | Renueva el par de tokens |
 | `POST` | `/auth/logout` | — | `204` | Cierra la sesión |
@@ -361,10 +361,11 @@ Tareas programadas de cuotas (hora de El Salvador): generación automática del 
 BASE=http://localhost:3000/api/v1
 ```
 
-**Registro**
+**Alta de usuario** (solo administrador; `$TOKEN` es su access token)
 
 ```bash
 curl -X POST $BASE/users \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"email":"nestor@example.com","password":"Str0ngPass"}'
 ```

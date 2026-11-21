@@ -33,7 +33,7 @@ Toda ruta exige sesión salvo las marcadas como públicas. El rol se valida con
 | POST | /api/v1/auth/refresh | Renueva el access token rotando el refresh token | Pública |
 | POST | /api/v1/auth/logout | Revoca el refresh token | Pública |
 | GET | /api/v1/auth/me | Usuario autenticado | Todos |
-| POST | /api/v1/users | Registra un usuario (queda como Residente) | Pública |
+| POST | /api/v1/users | Da de alta un usuario (queda como Residente) | Administrador |
 | GET | /api/v1 | Health check | Pública |
 
 ### Unidades y torres
