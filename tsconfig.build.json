@@ -37,6 +37,8 @@
       "@Reservas/*": ["./src/reservas/*/index.ts"],
       "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
       "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
+      "@Directorio": ["./src/directorio/index.ts"],
+      "@Directorio/*": ["./src/directorio/*/index.ts"],
       "@Pagos": ["./src/pagos/index.ts"],
       "@Pagos/*": ["./src/pagos/*/index.ts"],
       "@Reportes": ["./src/reportes/index.ts"],
