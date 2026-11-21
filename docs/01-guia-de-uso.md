@@ -104,3 +104,16 @@ comunicado: {título}”) y pasa a **Expirado** los que llegaron a su expiració
 4. La pestaña **Archivo** lista los comunicados expirados.
 5. Un comunicado de otra torre no aparece; si se abre por su enlace se ve
    “Comunicado no encontrado”.
+
+### Módulo 10: Reportes financieros y analíticos
+
+#### Exportar el reporte para la mesa directiva (Administrador, H20)
+
+1. Abrir **Panel** y elegir el periodo.
+2. Pulsar **Exportar**. En el diálogo elegir el formato (PDF o Excel, por defecto PDF) y la versión
+   (Resumida o Detallada, por defecto Resumida). La resumida solo trae totales, sin unidades ni nombres;
+   la detallada agrega la morosidad por unidad.
+3. Pulsar **Descargar**. Mientras se genera el botón queda deshabilitado; al terminar se descarga
+   `reporte-condominio-AAAA-MM-DD` y se cierra el diálogo.
+4. El archivo muestra los mismos valores que el panel para ese periodo y lleva periodo, fecha y hora de
+   generación y nombre del administrador.

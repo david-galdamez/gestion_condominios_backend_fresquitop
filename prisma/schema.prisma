@@ -65,6 +65,7 @@ model User {
   pagos                   Pago[]
   notificacionesRecibidas NotificacionDestinatario[]
   comunicadosLeidos       LecturaComunicado[]
+  exportaciones           Exportacion[]
   asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
   
   // H12/H27: relación con los votos emitidos
@@ -856,4 +857,41 @@ model Voto {
 
   @@unique([temaId, unidadId])
   @@map("voto")
+}
+
+// ---------------------------------------------------------------------------
+// H20 · Exportación del reporte para la mesa directiva
+// ---------------------------------------------------------------------------
+
+enum FormatoExportacion {
+  PDF
+  EXCEL
+
+  @@map("formato_exportacion")
+}
+
+enum VersionExportacion {
+  DETALLADA
+  RESUMIDA
+
+  @@map("version_exportacion")
+}
+
+// Auditoría: una fila por archivo generado. CHECK (periodo_desde <= periodo_hasta)
+// agregado a mano en el SQL de la migración.
+model Exportacion {
+  id String @id @default(uuid()) @db.Uuid
+
+  administradorId String @map("administrador_id") @db.Uuid
+  administrador   User   @relation(fields: [administradorId], references: [id], onDelete: Restrict)
+
+  formato      FormatoExportacion
+  version      VersionExportacion
+  periodoDesde DateTime           @map("periodo_desde") @db.Date
+  periodoHasta DateTime           @map("periodo_hasta") @db.Date
+  generadaEn   DateTime           @default(now()) @map("generada_en")
+
+  @@index([administradorId])
+  @@index([generadaEn])
+  @@map("exportacion")
 }

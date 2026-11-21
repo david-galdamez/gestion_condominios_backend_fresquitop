@@ -125,7 +125,7 @@ Reglas de H14:
   entero mayor o igual a 1”; 404 “Comunicado no encontrado” si no existe, está
   programado, es de otra torre o el enlace está mal formado.
 
-### Módulo 10: Reportes financieros y analíticos (H19)
+### Módulo 10: Reportes financieros y analíticos (H19, H20)
 
 | Método | Ruta | Descripción | Roles |
 |---|---|---|---|
@@ -136,4 +136,17 @@ Errores: 400 fechas ausentes, invertidas o rango mayor; 401 sin sesión; 403 rol
 La mora se calcula al día de hoy con las mismas consultas que H22; la participación usa la fórmula de H27.
 `cambio` es `(actual − anterior) ÷ anterior × 100` contra el periodo anterior de igual duración y es `null`
 ("Sin base de comparación") cuando el anterior vale 0.
+
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| GET | /api/v1/admin/reportescondominio/exportar?formato=&version=&desde=&hasta= | Descarga el reporte del panel en PDF (con gráficos) o Excel para la mesa directiva (H20) | Administrador |
+
+- `formato`: `PDF` o `EXCEL`. `version`: `RESUMIDA` (solo totales, sin unidades ni nombres) o
+  `DETALLADA` (agrega la morosidad por unidad de H22). `desde` y `hasta`: mismas reglas que el panel.
+- Responde el archivo como adjunto `reporte-condominio-AAAA-MM-DD.pdf` o `.xlsx` (fecha de generación en
+  El Salvador). El encabezado trae periodo, fecha y hora de generación y nombre del administrador.
+- Los datos salen del mismo `PanelService` que `/admin/panel`, así que las cifras coinciden con la pantalla.
+- Cada archivo generado se registra en `exportacion` (auditoría).
+- Errores: 400 “Selecciona un periodo” (falta `desde` o `hasta`), fecha inválida, periodo invertido o mayor
+  a 366 días, formato o versión inválidos; 401 sin sesión; 403 rol sin permiso.
 

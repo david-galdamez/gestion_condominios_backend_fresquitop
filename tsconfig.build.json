@@ -45,6 +45,8 @@
       "@Comunicados/*": ["./src/comunicados/*/index.ts"],
       "@Panel": ["./src/panel/index.ts"],
       "@Panel/*": ["./src/panel/*/index.ts"],
+      "@Exportaciones": ["./src/exportaciones/index.ts"],
+      "@Exportaciones/*": ["./src/exportaciones/*/index.ts"],
       "@Asambleas": ["./src/asambleas/index.ts"],
       "@Asambleas/*": ["./src/asambleas/*/index.ts"],
       "@PrismaClient": ["./src/generated/prisma/client.ts"]

@@ -128,6 +128,15 @@ erDiagram
         uuid residente_id PK, FK
         timestamp leido_en
     }
+    EXPORTACION {
+        uuid id PK
+        uuid administrador_id FK
+        enum formato "PDF | EXCEL"
+        enum version "DETALLADA | RESUMIDA"
+        date periodo_desde
+        date periodo_hasta
+        timestamp generada_en
+    }
     REFRESH_TOKENS {
         uuid id PK
         string token_hash UK
@@ -156,3 +165,4 @@ erDiagram
 | `comunicado` | Comunicado del administrador (H13). | `categoria`, `para_todos`, `fecha_publicacion`, `fecha_expiracion` (CHECK: posterior a la publicación), `estado`, `autor_id`. |
 | `comunicado_destino` | Torres destino de un comunicado que no es para todos. | PK compuesta (`comunicado_id`, `torre_id`). |
 | `lectura_comunicado` | Comunicados que cada residente ya abrió (H14). Sin fila = no leído. | PK compuesta (`comunicado_id`, `residente_id`): una sola lectura por residente; índice `ix_lectura_residente`; `leido_en`. Reversión en `down.sql`. |
+| `exportacion` | Auditoría de cada reporte exportado para la mesa directiva (H20). Sin borrado. | `administrador_id`, `formato`, `version`, `periodo_desde` ≤ `periodo_hasta` (CHECK), `generada_en`; índices por administrador y fecha. Reversión en `down.sql`. |

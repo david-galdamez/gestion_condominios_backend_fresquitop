@@ -8,5 +8,7 @@ import { PanelService } from './services/index.js';
   imports: [MorosidadModule],
   controllers: [PanelController],
   providers: [PanelService, PanelRepository],
+  // H20 exporta el reporte con este mismo servicio, así los valores coinciden con el panel.
+  exports: [PanelService],
 })
 export class PanelModule {}

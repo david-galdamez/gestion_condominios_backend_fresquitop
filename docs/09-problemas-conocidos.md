@@ -7,5 +7,4 @@
 | El backend no configura CORS. Hoy no afecta porque el frontend llama a la API desde el servidor, pero la guía pide permitir la URL del frontend desplegado. | Llamar a la API desde un navegador en otro origen. | Bajo | — |
 | `POST /api/v1/users` es público: cualquiera puede registrarse (queda como Residente sin unidades). | `POST /api/v1/users` sin token. | Medio | — |
 | El seed imprime y usa una contraseña común para todos los usuarios de prueba; en producción se debe correr con contraseñas distintas que se entregan por Moodle. | `npm run db:seed` | Medio | — |
-| El panel de salud del condominio no está implementado: depende de reservas (H04) y asambleas (H11, H27). | Abrir `/admin/panel`. | Medio | H19 |
 | H16 (directorio) y H25 (visitas dentro) tienen pantallas en el frontend pero aún no tienen endpoints en el backend. | Abrir `/directorio` o `/porteria/dentro`. | Medio | H15, H16, H08, H25 |

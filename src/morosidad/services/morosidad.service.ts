@@ -5,6 +5,7 @@ import {
   MOROSIDAD_PAGE_SIZE,
   type MorosidadQueryDto,
   type MorosidadResponseDto,
+  type UnidadMorosaDto,
 } from '@Morosidad/dto';
 
 @Injectable()
@@ -48,5 +49,21 @@ export class MorosidadService {
   async resumen(): Promise<{ totalMora: number; unidadesMorosas: number }> {
     const { totalMora, unidadesMorosas } = await this.morosidadRepository.resumenMorosidad();
     return { totalMora: Number(totalMora.toFixed(2)), unidadesMorosas };
+  }
+
+  /**
+   * Todas las unidades morosas, sin paginar y con el mismo orden y cálculo que
+   * la consulta paginada. La usa la versión detallada del reporte (H20).
+   */
+  async detallePorUnidad(): Promise<UnidadMorosaDto[]> {
+    const { unidadesMorosas } = await this.morosidadRepository.resumenMorosidad();
+    if (unidadesMorosas === 0) return [];
+    const { filas } = await this.morosidadRepository.consultarMorosidad(null, unidadesMorosas, 0);
+    return filas.map((fila) => ({
+      unidad: fila.unidad,
+      cuotasVencidas: Number(fila.cuotasVencidas),
+      montoAdeudado: Number(Number(fila.montoAdeudado).toFixed(2)),
+      vencidaMasAntigua: fila.vencidaMasAntigua,
+    }));
   }
 }
