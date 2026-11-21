@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { UnidadesModule } from '@Unidades';
 import { UsersController } from '@Users/controllers';
 import { UsersService } from '@Users/services';
 import { UserRepository } from '@Users/repositories';
 
 @Module({
+  imports: [UnidadesModule],
   controllers: [UsersController],
   providers: [UsersService, UserRepository],
   // Se exporta también el repositorio para que otros módulos puedan reutilizar

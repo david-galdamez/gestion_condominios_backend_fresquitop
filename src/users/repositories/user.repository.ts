@@ -10,6 +10,8 @@ export interface CreateUserData {
   email: string;
   passwordHash: string;
   nombre: string;
+  /** Unidades a vincular en el mismo insert (atómico con el usuario). */
+  unidadIds?: string[];
   /** Si se omite, la base aplica el default (RESIDENTE). */
 }
 
@@ -33,7 +35,7 @@ export class UserRepository {
    * insert. El código P2002 de Prisma se traduce a un error de dominio para
    * que la capa de servicio no tenga que conocer los códigos del ORM.
    */
-  async create({ email, passwordHash, nombre }: CreateUserData): Promise<User> {
+  async create({ email, passwordHash, nombre, unidadIds = [] }: CreateUserData): Promise<User> {
     try {
       return await this.prisma.user.create({
         data: {
@@ -43,6 +45,7 @@ export class UserRepository {
           // H15 (BE-15.2): todo residente nace oculto en el directorio. Va en el
           // mismo insert anidado, así que es atómico con la creación del usuario.
           perfilDirectorio: { create: {} },
+          unidades: { create: unidadIds.map((unidadId) => ({ unidadId })) },
         },
       });
     } catch (error) {

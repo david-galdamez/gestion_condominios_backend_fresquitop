@@ -3,7 +3,7 @@ import request from 'supertest';
 import { PrismaService } from '@Prisma/services';
 import { Rol } from '@PrismaClient';
 import { crearApp } from './helpers/app.js';
-import { crearUsuario, limpiarTablas, login, PASSWORD } from './helpers/fixtures.js';
+import { crearUnidad, crearUsuario, limpiarTablas, login, PASSWORD } from './helpers/fixtures.js';
 
 const URL = '/api/v1/users';
 
@@ -51,5 +51,31 @@ describe('Alta de usuarios (e2e)', () => {
     expect(res.body).not.toHaveProperty('passwordHash');
     const fila = await prisma.user.findUniqueOrThrow({ where: { email: body.email } });
     expect(fila.rol).toBe(Rol.RESIDENTE);
+  });
+  describe('con unidades', () => {
+    const conUnidades = (token: string, unidadIds: unknown) =>
+      request(app.getHttpServer())
+        .post(URL)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ ...body, unidadIds });
+
+    it('vincula las unidades activas indicadas', async () => {
+      const torre = await prisma.torre.create({ data: { nombre: 'Torre T' } });
+      const u1 = await crearUnidad(prisma, torre.id, 'T-101');
+      const u2 = await crearUnidad(prisma, torre.id, 'T-102');
+      await conUnidades(await login(app, 'admin@test.com'), [u1.id, u2.id]).expect(201);
+      const vinculos = await prisma.usuarioUnidad.count({ where: { usuario: { email: body.email } } });
+      expect(vinculos).toBe(2);
+    });
+
+    it('unidad inexistente o inactiva responde 400 y no crea el usuario', async () => {
+      const torre = await prisma.torre.create({ data: { nombre: 'Torre T' } });
+      const inactiva = await prisma.unidad.create({ data: { torreId: torre.id, codigo: 'T-103', activa: false } });
+      const token = await login(app, 'admin@test.com');
+      await conUnidades(token, [inactiva.id]).expect(400);
+      await conUnidades(token, ['0b5e3c1e-7f0a-4c55-9a53-2f4f3f5f0a11']).expect(400);
+      await conUnidades(token, ['no-es-uuid']).expect(400);
+      expect(await prisma.user.count({ where: { email: body.email } })).toBe(0);
+    });
   });
 });
