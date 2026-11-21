@@ -32,6 +32,7 @@ erDiagram
         enum rol "RESIDENTE | ADMINISTRADOR | SEGURIDAD"
         string password_hash
         boolean is_active
+        string telefono "nullable, ####-####"
     }
     TORRE {
         uuid id PK
@@ -150,7 +151,7 @@ erDiagram
 
 | Tabla | Descripción | Campos importantes |
 |---|---|---|
-| `users` | Usuarios del sistema con su rol global. | `email` único, `rol`, `password_hash` (bcrypt), `is_active`. |
+| `users` | Usuarios del sistema con su rol global. | `email` único, `rol`, `password_hash` (bcrypt), `is_active`, `telefono` opcional (`####-####`, CHECK; lo registra el residente en “Mi directorio”, hotfix 1.0.1). |
 | `refresh_tokens` | Refresh tokens emitidos; se guarda solo el hash. | `token_hash` (SHA-256), `expires_at`, `revoked_at`. |
 | `torre` | Torres del condominio. | `nombre` único. |
 | `unidad` | Apartamentos o casas, agrupados por torre. | `codigo` legible único (`A-101`), `activa`. |

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { GuardarPerfilDirectorioDto } from '../dto/guardar-perfil-directorio.dto.js';
 import type { PerfilDirectorioRepository } from '../repositories/perfil-directorio.repository.js';
 import { aplicarPrivacidad, PerfilDirectorioService } from './perfil-directorio.service.js';
@@ -60,8 +60,39 @@ describe('PerfilDirectorioService', () => {
     const dto = { ...oculto, visible: true, mostrarNombre: true, extra: 'x' } as unknown as GuardarPerfilDirectorioDto;
     repo.guardar.mockImplementation(async (id: string, o: object) => ({ residenteId: id, ...o }));
     const r = await service.guardar('r-1', dto);
-    expect(repo.guardar).toHaveBeenCalledWith('r-1', { ...oculto, visible: true, mostrarNombre: true });
+    // Sin `telefono` en el cuerpo: el tercer argumento es undefined (no se toca).
+    expect(repo.guardar).toHaveBeenCalledWith('r-1', { ...oculto, visible: true, mostrarNombre: true }, undefined);
     expect(r.vistaPrevia?.nombre).toBe('Ana López');
+  });
+
+  describe('teléfono (hotfix 1.0.1)', () => {
+    const conTelefono = (extra: object) =>
+      ({ ...oculto, visible: true, mostrarNombre: true, ...extra }) as unknown as GuardarPerfilDirectorioDto;
+
+    beforeEach(() => {
+      repo.guardar.mockImplementation(async (id: string, o: object) => ({ residenteId: id, ...o }));
+    });
+
+    it('guarda el teléfono nuevo y lo muestra si está marcado', async () => {
+      const r = await service.guardar('r-1', conTelefono({ telefono: '7044-2727', mostrarTelefono: true }));
+      expect(repo.guardar).toHaveBeenCalledWith('r-1', expect.objectContaining({ mostrarTelefono: true }), '7044-2727');
+      expect(r.misDatos.telefono).toBe('7044-2727');
+      expect(r.vistaPrevia?.telefono).toBe('7044-2727');
+    });
+
+    it('omitido conserva el guardado; null lo borra', async () => {
+      repo.datosResidente.mockResolvedValue({ ...datos, telefono: '2222-3333' });
+      expect((await service.guardar('r-1', conTelefono({}))).misDatos.telefono).toBe('2222-3333');
+      expect((await service.guardar('r-1', conTelefono({ telefono: null }))).misDatos.telefono).toBeNull();
+      expect(repo.guardar).toHaveBeenLastCalledWith('r-1', expect.anything(), null);
+    });
+
+    it('mostrar teléfono sin tenerlo -> 400 y no guarda', async () => {
+      await expect(service.guardar('r-1', conTelefono({ mostrarTelefono: true }))).rejects.toThrow(
+        new BadRequestException('Registra tu teléfono para poder mostrarlo'),
+      );
+      expect(repo.guardar).not.toHaveBeenCalled();
+    });
   });
 
   it('residente inexistente -> 404', async () => {
