@@ -30,6 +30,22 @@ export class UnidadRepository {
     });
   }
 
+  /** Unidades activas entre los ids dados (valida asignaciones). */
+  findActivasByIds(ids: string[]): Promise<UnidadResumen[]> {
+    return this.prisma.unidad.findMany({
+      where: { id: { in: ids }, activa: true },
+      select: { id: true, codigo: true },
+    });
+  }
+
+  /** Crea una unidad activa en la torre indicada. */
+  crear(torreId: string, codigo: string): Promise<UnidadResumen> {
+    return this.prisma.unidad.create({
+      data: { torreId, codigo },
+      select: { id: true, codigo: true },
+    });
+  }
+
   /** Todas las torres por nombre (destinatarios de comunicados, H13). */
   findTorres(): Promise<{ id: string; nombre: string }[]> {
     return this.prisma.torre.findMany({ select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
