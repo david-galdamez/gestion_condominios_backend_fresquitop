@@ -1,8 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import type { ConfigService } from '@nestjs/config';
-import type { EnvConfig } from '@Config';
+import type { PrismaService } from '@Prisma/services';
 import { ArchivosService, MAX_IMAGEN_BYTES, type ArchivoSubido } from './archivos.service.js';
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
@@ -11,9 +7,12 @@ const PDF = Buffer.from('%PDF-1.7 ...');
 const archivo = (buffer: Buffer, size = buffer.length): ArchivoSubido => ({ buffer, size });
 
 describe('ArchivosService', () => {
-  const raiz = mkdtempSync(join(tmpdir(), 'archivos-'));
-  const config = { get: () => raiz } as unknown as ConfigService<EnvConfig, true>;
-  const service = new ArchivosService(config);
+  const prisma = {
+    archivo: { create: vi.fn(), deleteMany: vi.fn(), findUnique: vi.fn() },
+  };
+  const service = new ArchivosService(prisma as unknown as PrismaService);
+
+  beforeEach(() => vi.clearAllMocks());
 
   it('reconoce PNG y JPG por sus primeros bytes', () => {
     expect(service.extensionImagen(archivo(PNG))).toBe('png');
@@ -28,12 +27,24 @@ describe('ArchivosService', () => {
     expect(service.extensionImagen(archivo(PNG, MAX_IMAGEN_BYTES))).toBe('png');
   });
 
-  it('guarda con nombre aleatorio dentro de la carpeta y lo puede borrar', async () => {
-    const ruta = await service.guardar('paquetes', archivo(PNG), 'png');
-    expect(ruta).toMatch(/^paquetes\/[0-9a-f-]{36}\.png$/);
-    expect(readFileSync(service.rutaAbsoluta(ruta))).toEqual(PNG);
-    await service.borrar(ruta);
-    expect(existsSync(service.rutaAbsoluta(ruta))).toBe(false);
-    await expect(service.borrar(ruta)).resolves.toBeUndefined();
+  it('guarda en la tabla archivo con clave aleatoria dentro de la carpeta', async () => {
+    const clave = await service.guardar('paquetes', archivo(PNG), 'png');
+    expect(clave).toMatch(/^paquetes\/[0-9a-f-]{36}\.png$/);
+    expect(prisma.archivo.create).toHaveBeenCalledWith({
+      data: { clave, mimeType: 'image/png', tamanoBytes: PNG.length, datos: new Uint8Array(PNG) },
+    });
+  });
+
+  it('borra por clave sin fallar si no existe', async () => {
+    prisma.archivo.deleteMany.mockResolvedValue({ count: 0 });
+    await expect(service.borrar('paquetes/x.png')).resolves.toBeUndefined();
+    expect(prisma.archivo.deleteMany).toHaveBeenCalledWith({ where: { clave: 'paquetes/x.png' } });
+  });
+
+  it('lee el contenido y el tipo; devuelve null si no existe', async () => {
+    prisma.archivo.findUnique.mockResolvedValueOnce({ datos: new Uint8Array(PNG), mimeType: 'image/png' });
+    expect(await service.leer('paquetes/x.png')).toEqual({ datos: PNG, mimeType: 'image/png' });
+    prisma.archivo.findUnique.mockResolvedValueOnce(null);
+    expect(await service.leer('paquetes/y.png')).toBeNull();
   });
 });

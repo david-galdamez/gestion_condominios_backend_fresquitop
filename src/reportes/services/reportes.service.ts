@@ -1,4 +1,4 @@
-import type { ReadStream } from 'node:fs';
+import type { Readable } from 'node:stream';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { API_PREFIX } from '../../app.setup.js';
 import type {
@@ -118,7 +118,7 @@ export class ReportesService {
     residenteId: string,
     numeroTexto: string,
     fotoId: string,
-  ): Promise<{ stream: ReadStream; mimeType: string }> {
+  ): Promise<{ stream: Readable; mimeType: string }> {
     const numero = parsearNumero(numeroTexto);
     if (numero === null || !UUID.test(fotoId)) throw new NotFoundException(MENSAJE_REPORTE_NO_ENCONTRADO);
 

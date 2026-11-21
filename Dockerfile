@@ -58,11 +58,6 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # cliente generado desde src/, no desde dist/.
 COPY --from=builder /app/src/generated ./src/generated
 
-# Carpeta de archivos subidos (UPLOAD_DIR=uploads, fotos de paquetes y reportes).
-# /app es de root, así que se crea acá con dueño `node`; si no, el mkdir en
-# runtime falla con EACCES. docker-compose monta un volumen encima.
-RUN mkdir -p /app/uploads && chown node:node /app/uploads
-
 # La imagen de Node ya trae el usuario `node` sin privilegios.
 USER node
 
