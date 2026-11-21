@@ -4,6 +4,8 @@ export const DESCRIPCION_MIN = 10;
 export const DESCRIPCION_MAX = 500;
 export const RESPONSABLE_MIN = 3;
 export const RESPONSABLE_MAX = 60;
+export const COMENTARIO_CIERRE_MIN = 10;
+export const COMENTARIO_CIERRE_MAX = 300;
 
 export const MAX_FOTOS = 5;
 export const MAX_FOTO_BYTES = 5 * 1024 * 1024;
@@ -25,6 +27,8 @@ export const MENSAJE_ASIGNACION_INCOMPLETA = 'Asigna prioridad y responsable jun
 export const MENSAJE_RESPONSABLE_LONGITUD = `El responsable debe tener entre ${RESPONSABLE_MIN} y ${RESPONSABLE_MAX} caracteres`;
 export const MENSAJE_PRIORIDAD_INVALIDA = 'La prioridad debe ser ALTA, MEDIA o BAJA';
 export const MENSAJE_REPORTE_YA_RESUELTO = 'No se puede modificar un reporte resuelto';
+export const MENSAJE_COMENTARIO_CIERRE = `El comentario debe tener entre ${COMENTARIO_CIERRE_MIN} y ${COMENTARIO_CIERRE_MAX} caracteres`;
+export const MENSAJE_SOLO_EN_PROCESO = 'Solo se pueden resolver reportes En proceso';
 
 /** Áreas comunes válidas como ubicación (las torres salen de la tabla `torre`). */
 export const AREAS_COMUNES = [

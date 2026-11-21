@@ -65,6 +65,7 @@ model User {
   pagos                   Pago[]
   notificacionesRecibidas NotificacionDestinatario[]
   comunicadosLeidos       LecturaComunicado[]
+  exportaciones           Exportacion[]
   asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
   
   // H12/H27: relación con los votos emitidos
@@ -405,11 +406,14 @@ model Reporte {
   descripcion String           @db.VarChar(500)
 
   // H06: sin asignar al crearse (NULL); el administrador asigna prioridad y responsable juntos.
-  prioridad   PrioridadReporte?
-  responsable String?           @db.VarChar(60)
-  estado      EstadoReporte     @default(ABIERTO)
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  prioridad        PrioridadReporte?
+  responsable      String?           @db.VarChar(60)
+  estado           EstadoReporte     @default(ABIERTO)
+  // H24: fecha y comentario de cierre al pasar a RESUELTO (NULL mientras no esté resuelto).
+  resueltoEn       DateTime?         @map("resuelto_en")
+  comentarioCierre String?           @map("comentario_cierre") @db.VarChar(300)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
   evidencias EvidenciaReporte[]
   historial  HistorialReporte[]
@@ -448,7 +452,7 @@ model HistorialReporte {
   reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
 
   estado     EstadoReporte
-  comentario String?       @db.VarChar(200)
+  comentario String?       @db.VarChar(300)
 
   cambiadoPorId String @map("cambiado_por_id") @db.Uuid
   cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)
@@ -854,4 +858,41 @@ model Voto {
 
   @@unique([temaId, unidadId])
   @@map("voto")
+}
+
+// ---------------------------------------------------------------------------
+// H20 · Exportación del reporte para la mesa directiva
+// ---------------------------------------------------------------------------
+
+enum FormatoExportacion {
+  PDF
+  EXCEL
+
+  @@map("formato_exportacion")
+}
+
+enum VersionExportacion {
+  DETALLADA
+  RESUMIDA
+
+  @@map("version_exportacion")
+}
+
+// Auditoría: una fila por archivo generado. CHECK (periodo_desde <= periodo_hasta)
+// agregado a mano en el SQL de la migración.
+model Exportacion {
+  id String @id @default(uuid()) @db.Uuid
+
+  administradorId String @map("administrador_id") @db.Uuid
+  administrador   User   @relation(fields: [administradorId], references: [id], onDelete: Restrict)
+
+  formato      FormatoExportacion
+  version      VersionExportacion
+  periodoDesde DateTime           @map("periodo_desde") @db.Date
+  periodoHasta DateTime           @map("periodo_hasta") @db.Date
+  generadaEn   DateTime           @default(now()) @map("generada_en")
+
+  @@index([administradorId])
+  @@index([generadaEn])
+  @@map("exportacion")
 }

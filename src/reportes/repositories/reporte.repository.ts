@@ -1,4 +1,3 @@
-// src/reportes/repositories/reporte.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@Prisma/services';
 import {
@@ -9,10 +8,22 @@ import {
   type Prisma,
   type Reporte,
 } from '@PrismaClient';
-import { ReporteNotFoundError, ReporteYaResueltoError } from '@Reportes/errors';
+import {
+  ReporteEstadoInvalidoError,
+  ReporteNotFoundError,
+  ReporteYaResueltoError,
+} from '@Reportes/errors';
 import type { FotoGuardada } from '../reportes.types.js';
 
-export type ReporteConEvidencias = Prisma.ReporteGetPayload<{ include: { evidencias: true } }>;
+const INCLUDE_RESIDENTE_DETALLE = {
+  evidencias: { orderBy: { orden: 'asc' } },
+  historial: { orderBy: { createdAt: 'asc' } },
+} satisfies Prisma.ReporteInclude;
+
+export type ReporteDetalleResidente = Prisma.ReporteGetPayload<{
+  include: typeof INCLUDE_RESIDENTE_DETALLE;
+}>;
+export type ReporteConEvidencias = ReporteDetalleResidente;
 
 const INCLUDE_ADMIN_ITEM = {
   residente: {
@@ -69,6 +80,12 @@ export interface AsignarReporteParams {
   comentario: string;
 }
 
+export interface ResolverReporteParams {
+  reporteId: string;
+  adminId: string;
+  comentario: string;
+}
+
 /**
  * Único punto del módulo que habla con las tablas `reporte`,
  * `evidencia_reporte` e `historial_reporte` (y con `torre` para el selector).
@@ -82,7 +99,7 @@ export class ReporteRepository {
    * sola operación: los `create` anidados de Prisma corren en una transacción,
    * así que o queda todo o no queda nada.
    */
-  crear(data: NuevoReporte): Promise<ReporteConEvidencias> {
+  crear(data: NuevoReporte): Promise<ReporteDetalleResidente> {
     return this.prisma.reporte.create({
       data: {
         residenteId: data.residenteId,
@@ -93,7 +110,7 @@ export class ReporteRepository {
         evidencias: { create: data.evidencias.map((e, orden) => ({ ...e, orden })) },
         historial: { create: { estado: EstadoReporte.ABIERTO, cambiadoPorId: data.residenteId } },
       },
-      include: { evidencias: { orderBy: { orden: 'asc' } } },
+      include: INCLUDE_RESIDENTE_DETALLE,
     });
   }
 
@@ -116,11 +133,14 @@ export class ReporteRepository {
     return { reportes, total };
   }
 
-  /** Filtra por dueño: el reporte de otro residente es indistinguible de uno inexistente. */
-  findDeResidente(residenteId: string, numero: number): Promise<ReporteConEvidencias | null> {
+  /**
+   * Filtra por dueño: el reporte de otro residente es indistinguible de uno inexistente.
+   * Incluye evidencias ordenadas e historial cronológico completo de cambios de estado (BE-24.2).
+   */
+  findDeResidente(residenteId: string, numero: number): Promise<ReporteDetalleResidente | null> {
     return this.prisma.reporte.findFirst({
       where: { numero, residenteId },
-      include: { evidencias: { orderBy: { orden: 'asc' } } },
+      include: INCLUDE_RESIDENTE_DETALLE,
     });
   }
 
@@ -212,6 +232,50 @@ export class ReporteRepository {
           estado: EstadoReporte.EN_PROCESO,
           cambiadoPorId: params.adminId,
           comentario: params.comentario,
+        },
+      });
+
+      return actualizado;
+    });
+  }
+
+  /**
+   * H24: Marca un reporte EN_PROCESO como RESUELTO en una transacción atómica,
+   * guardando `resueltoEn`, `comentarioCierre` y la entrada correspondiente en `historial_reporte`.
+   */
+  resolver(params: ResolverReporteParams): Promise<Reporte> {
+    return this.prisma.$transaction(async (tx) => {
+      const actual = await tx.reporte.findUnique({
+        where: { id: params.reporteId },
+        select: { id: true, estado: true },
+      });
+
+      if (!actual) {
+        throw new ReporteNotFoundError(params.reporteId);
+      }
+
+      if (actual.estado !== EstadoReporte.EN_PROCESO) {
+        throw new ReporteEstadoInvalidoError(params.reporteId, actual.estado);
+      }
+
+      const resueltoEn = new Date();
+
+      const actualizado = await tx.reporte.update({
+        where: { id: params.reporteId },
+        data: {
+          estado: EstadoReporte.RESUELTO,
+          resueltoEn,
+          comentarioCierre: params.comentario,
+        },
+      });
+
+      await tx.historialReporte.create({
+        data: {
+          reporteId: params.reporteId,
+          estado: EstadoReporte.RESUELTO,
+          cambiadoPorId: params.adminId,
+          comentario: params.comentario,
+          createdAt: resueltoEn,
         },
       });
 

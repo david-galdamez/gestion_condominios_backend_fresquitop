@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CategoriaReporte, EstadoReporte } from '@PrismaClient';
 
 export class ReporteResumenDto {
@@ -21,6 +21,23 @@ export class ReporteResumenDto {
   creadoEn!: string;
 }
 
+export class HistorialReporteResidenteItemDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ enum: EstadoReporte, enumName: 'EstadoReporte' })
+  estado!: EstadoReporte;
+
+  @ApiProperty({ example: '2026-11-20T16:30:00.000Z', description: 'ISO 8601' })
+  fecha!: string;
+
+  @ApiPropertyOptional({
+    example: 'Se reemplazó el empaque de la tubería principal.',
+    nullable: true,
+  })
+  comentario!: string | null;
+}
+
 export class ReporteDto extends ReporteResumenDto {
   @ApiProperty({ example: 'Torre A' })
   ubicacion!: string;
@@ -34,6 +51,18 @@ export class ReporteDto extends ReporteResumenDto {
     description: 'Rutas de descarga (requieren sesión del dueño del reporte).',
   })
   fotos!: string[];
+
+  @ApiPropertyOptional({ example: '2026-11-20T16:30:00.000Z', nullable: true, description: 'ISO 8601' })
+  resueltoEn!: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Se reemplazó el empaque de la tubería principal.',
+    nullable: true,
+  })
+  comentarioCierre!: string | null;
+
+  @ApiProperty({ type: [HistorialReporteResidenteItemDto] })
+  historial!: HistorialReporteResidenteItemDto[];
 }
 
 export class ReportesPaginaDto {

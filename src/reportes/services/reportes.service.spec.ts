@@ -1,13 +1,14 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CategoriaReporte, EstadoReporte } from '@PrismaClient';
-import type { ReporteConEvidencias, ReporteRepository } from '@Reportes/repositories';
+import type { ReporteDetalleResidente, ReporteRepository } from '@Reportes/repositories';
 import { MAX_FOTO_BYTES, MENSAJE_FOTOS, MENSAJE_REPORTE_NO_ENCONTRADO } from '../reportes.constants.js';
 import type { FotoSubida } from '../reportes.types.js';
 import type { EvidenciaStorageService } from './evidencia-storage.service.js';
 import { ReportesService } from './reportes.service.js';
 
 const RESIDENTE = '11111111-1111-4111-8111-111111111111';
+const ADMIN_ID = '99999999-9999-4999-8999-999999999999';
 
 const dto = {
   titulo: 'Fuga de agua',
@@ -23,19 +24,32 @@ const png = (size = 16): FotoSubida => ({
   buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0, 0, 0, 0, 0]),
 });
 
-const reporteFalso = (over: Partial<ReporteConEvidencias> = {}) =>
+const reporteFalso = (over: Partial<ReporteDetalleResidente> = {}) =>
   ({
     id: '22222222-2222-4222-8222-222222222222',
     numero: 123,
     residenteId: RESIDENTE,
     ...dto,
     prioridad: 'MEDIA',
+    responsable: null,
     estado: EstadoReporte.ABIERTO,
+    resueltoEn: null,
+    comentarioCierre: null,
     createdAt: new Date('2026-11-08T22:53:00.000Z'),
     updatedAt: new Date('2026-11-08T22:53:00.000Z'),
     evidencias: [],
+    historial: [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        reporteId: '22222222-2222-4222-8222-222222222222',
+        estado: EstadoReporte.ABIERTO,
+        comentario: null,
+        cambiadoPorId: RESIDENTE,
+        createdAt: new Date('2026-11-08T22:53:00.000Z'),
+      },
+    ],
     ...over,
-  }) as unknown as ReporteConEvidencias;
+  }) as unknown as ReporteDetalleResidente;
 
 describe('ReportesService', () => {
   let repo: {
@@ -80,6 +94,7 @@ describe('ReportesService', () => {
       const r = await service.crear(RESIDENTE, dto, []);
       expect(r.numero).toBe('REP-000123');
       expect(r.estado).toBe('ABIERTO');
+      expect(r.historial).toHaveLength(1);
       expect(repo.crear).toHaveBeenCalledOnce();
     });
 
@@ -140,16 +155,77 @@ describe('ReportesService', () => {
     });
   });
 
-  describe('obtener', () => {
-    it('devuelve el reporte propio', async () => {
-      repo.findDeResidente.mockResolvedValue(reporteFalso());
+  describe('obtener (BE-24.2)', () => {
+    it('devuelve el reporte propio con historial cronológico completo y datos de cierre', async () => {
+      const resueltoEn = new Date('2026-11-20T16:30:00.000Z');
+      const comentarioCierre = 'Se reparó la tubería y se confirmó la ausencia de fugas.';
+
+      repo.findDeResidente.mockResolvedValue(
+        reporteFalso({
+          estado: EstadoReporte.RESUELTO,
+          resueltoEn,
+          comentarioCierre,
+          historial: [
+            {
+              id: '33333333-3333-4333-8333-333333333331',
+              reporteId: '22222222-2222-4222-8222-222222222222',
+              estado: EstadoReporte.ABIERTO,
+              comentario: null,
+              cambiadoPorId: RESIDENTE,
+              createdAt: new Date('2026-11-08T22:53:00.000Z'),
+            },
+            {
+              id: '33333333-3333-4333-8333-333333333332',
+              reporteId: '22222222-2222-4222-8222-222222222222',
+              estado: EstadoReporte.EN_PROCESO,
+              comentario: 'Prioridad: ALTA · Responsable: Fontanería López',
+              cambiadoPorId: ADMIN_ID,
+              createdAt: new Date('2026-11-09T09:00:00.000Z'),
+            },
+            {
+              id: '33333333-3333-4333-8333-333333333333',
+              reporteId: '22222222-2222-4222-8222-222222222222',
+              estado: EstadoReporte.RESUELTO,
+              comentario: comentarioCierre,
+              cambiadoPorId: ADMIN_ID,
+              createdAt: resueltoEn,
+            },
+          ],
+        }),
+      );
+
       const r = await service.obtener(RESIDENTE, 'REP-000123');
+
       expect(repo.findDeResidente).toHaveBeenCalledWith(RESIDENTE, 123);
       expect(r.numero).toBe('REP-000123');
+      expect(r.estado).toBe(EstadoReporte.RESUELTO);
+      expect(r.resueltoEn).toBe('2026-11-20T16:30:00.000Z');
+      expect(r.comentarioCierre).toBe(comentarioCierre);
+      expect(r.historial).toEqual([
+        {
+          id: '33333333-3333-4333-8333-333333333331',
+          estado: EstadoReporte.ABIERTO,
+          fecha: '2026-11-08T22:53:00.000Z',
+          comentario: null,
+        },
+        {
+          id: '33333333-3333-4333-8333-333333333332',
+          estado: EstadoReporte.EN_PROCESO,
+          fecha: '2026-11-09T09:00:00.000Z',
+          comentario: 'Prioridad: ALTA · Responsable: Fontanería López',
+        },
+        {
+          id: '33333333-3333-4333-8333-333333333333',
+          estado: EstadoReporte.RESUELTO,
+          fecha: '2026-11-20T16:30:00.000Z',
+          comentario: comentarioCierre,
+        },
+      ]);
     });
 
-    it('responde "Reporte no encontrado" si es de otro residente', async () => {
+    it('responde 404 "Reporte no encontrado" si es de otro residente', async () => {
       repo.findDeResidente.mockResolvedValue(null);
+      await expect(service.obtener(RESIDENTE, 'REP-000999')).rejects.toThrow(NotFoundException);
       await expect(service.obtener(RESIDENTE, 'REP-000999')).rejects.toThrow(MENSAJE_REPORTE_NO_ENCONTRADO);
     });
 

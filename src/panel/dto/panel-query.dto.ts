@@ -7,8 +7,8 @@ export const MSG_FECHAS_REQUERIDAS = 'desde y hasta son obligatorias (YYYY-MM-DD
 export const MSG_FECHAS_INVERTIDAS = 'desde no puede ser posterior a hasta';
 export const MSG_RANGO_MAXIMO = `El periodo no puede superar ${MAX_DIAS_PERIODO} días`;
 
-/** Aplica sobre `hasta`: compara contra `desde` cuando ambas son fechas reales. */
-function RangoValido() {
+/** Aplica sobre `hasta`: compara contra `desde` cuando ambas son fechas reales. Lo reutiliza H20. */
+export function RangoValido() {
   return (target: object, propertyName: string) =>
     registerDecorator({
       name: 'rangoValido',

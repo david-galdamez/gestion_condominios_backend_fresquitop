@@ -7,6 +7,7 @@ import type { MorosidadQueryDto } from '../dto/morosidad-query.dto.js';
 describe('MorosidadService', () => {
   const repoMock = {
     consultarMorosidad: vi.fn(),
+    resumenMorosidad: vi.fn(),
   };
 
   const service = new MorosidadService(
@@ -100,5 +101,31 @@ describe('MorosidadService', () => {
     await expect(service.consultar(buildQuery())).rejects.toThrow(
       'Fallo de conexión',
     );
+  });
+
+  describe('detallePorUnidad (H20)', () => {
+    it('trae todas las unidades morosas en una sola consulta, con el formato de H22', async () => {
+      repoMock.resumenMorosidad.mockResolvedValue({ totalMora: 180, unidadesMorosas: 2 });
+      repoMock.consultarMorosidad.mockResolvedValue({
+        totalMora: 180,
+        unidadesMorosas: 2,
+        filas: [
+          { id: 'u-1', unidad: 'A-101', cuotasVencidas: '3', montoAdeudado: 135.004, vencidaMasAntigua: '2026-08-10' },
+          { id: 'u-2', unidad: 'B-205', cuotasVencidas: 1, montoAdeudado: 45, vencidaMasAntigua: '2026-10-10' },
+        ],
+      });
+
+      expect(await service.detallePorUnidad()).toEqual([
+        { unidad: 'A-101', cuotasVencidas: 3, montoAdeudado: 135, vencidaMasAntigua: '2026-08-10' },
+        { unidad: 'B-205', cuotasVencidas: 1, montoAdeudado: 45, vencidaMasAntigua: '2026-10-10' },
+      ]);
+      expect(repoMock.consultarMorosidad).toHaveBeenCalledWith(null, 2, 0);
+    });
+
+    it('sin unidades morosas no consulta el detalle', async () => {
+      repoMock.resumenMorosidad.mockResolvedValue({ totalMora: 0, unidadesMorosas: 0 });
+      expect(await service.detallePorUnidad()).toEqual([]);
+      expect(repoMock.consultarMorosidad).not.toHaveBeenCalled();
+    });
   });
 });
