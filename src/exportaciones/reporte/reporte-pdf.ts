@@ -46,7 +46,8 @@ export function generarPdf(doc: ReporteDocumento, { comprimir = true } = {}): Pr
 }
 
 const anchoUtil = (pdf: Pdf) => pdf.page.width - MARGEN * 2;
-const limiteInferior = (pdf: Pdf) => pdf.page.height - MARGEN - 20;
+// El pie ("Página i de n") se dibuja dentro del margen inferior, así que el contenido puede llegar hasta él.
+const limiteInferior = (pdf: Pdf) => pdf.page.height - MARGEN;
 
 /** Salta de página si lo que sigue (alto `h`) no cabe. */
 function asegurarEspacio(pdf: Pdf, h: number) {
