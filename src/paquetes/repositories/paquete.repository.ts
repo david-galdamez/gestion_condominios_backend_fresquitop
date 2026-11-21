@@ -47,4 +47,41 @@ export class PaqueteRepository {
       orderBy: { recibidoEn: 'desc' },
     });
   }
+
+    async obtenerUnidadDelUsuario(userId: string): Promise<string | null> {
+    const usuarioUnidad = await this.prisma.usuarioUnidad.findFirst({
+      where: { usuarioId: userId },
+    });
+    return usuarioUnidad?.unidadId ?? null;
+  }
+
+  async listarPorUnidad(unidadId: string, filtro: string, pagina: number) {
+    const porPagina = 20;
+    const skip = (pagina - 1) * porPagina;
+    
+    let where: any = { unidadId };
+    if (filtro === 'POR_RETIRAR') {
+      where.estado = { in: ['EN_PORTERIA', 'RETENIDO'] };
+    } else if (filtro === 'ENTREGADOS') {
+      where.estado = 'ENTREGADO';
+    }
+
+    const [registros, total] = await this.prisma.$transaction([
+      this.prisma.paquete.findMany({
+        where,
+        skip,
+        take: porPagina,
+        orderBy: { recibidoEn: 'desc' },
+      }),
+      this.prisma.paquete.count({ where }),
+    ]);
+
+    return { registros, total };
+  }
+
+  async buscarPorIdYUnidad(id: string, unidadId: string) {
+    return this.prisma.paquete.findFirst({
+      where: { id, unidadId },
+    });
+  }
 }

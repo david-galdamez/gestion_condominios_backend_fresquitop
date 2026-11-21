@@ -286,6 +286,7 @@ model Paquete {
 
   @@index([estado, recibidoEn])
   @@index([unidadId, estado])
+  @@index([unidadId, estado, recibidoEn(sort: Desc)])
   @@map("paquete")
 }
 
