@@ -23,6 +23,7 @@ import { UsersModule } from '@Users';
 import { ReservasModule } from '@Reservas';
 import { AsambleasModule } from './asambleas/index.js';
 import { PanelModule } from '@Panel';
+import { ExportacionesModule } from '@Exportaciones';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -55,6 +56,7 @@ import { validateEnv } from '@Config';
     ComunicadosModule,
     AsambleasModule,
     PanelModule,
+    ExportacionesModule,
   ],
   providers: [
     {
