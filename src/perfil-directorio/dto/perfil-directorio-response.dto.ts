@@ -11,7 +11,8 @@ export class DatosDirectorioDto {
   @ApiProperty({
     nullable: true,
     type: String,
-    description: 'Siempre null por ahora: el registro todavía no guarda teléfono (fase base).',
+    example: '7044-2727',
+    description: 'Teléfono que el residente registró en "Mi directorio" (null si no tiene).',
   })
   telefono!: string | null;
 
