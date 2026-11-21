@@ -73,7 +73,7 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
 | H15 | Decidir qué datos muestra el directorio | Jaime Jiménez | [card](https://trello.com/c/OaWUp3DU) | — | Pendiente: aún en desarrollo por el responsable |
-| H16 | Buscar el contacto de un vecino | Edwin Guzmán | [card](https://trello.com/c/7xf0QxKi) | [FE #5](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/5) | Parcial: solo frontend, falta backend (depende de H15) |
+| H16 | Buscar el contacto de un vecino | Edwin Guzmán | [card](https://trello.com/c/7xf0QxKi) | [FE #5](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/5), backend en el hotfix 1.0.1 (`hotfix/directorio-vecinos`) | Completa en v1.0.1 |
 
 ## Módulo 9: Notificaciones
 
