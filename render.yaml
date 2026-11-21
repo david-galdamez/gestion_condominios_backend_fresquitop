@@ -1,0 +1,30 @@
+# Blueprint de Render para la API. En Render: New → Blueprint → elegir este repo.
+# Los valores marcados `sync: false` se piden en el dashboard (nunca van al repo).
+services:
+  - type: web
+    name: condominios-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    # Usar la misma región que la base de Neon y el frontend de Vercel reduce latencia.
+    region: oregon
+    branch: main
+    autoDeploy: true
+    # GET /api/v1 es público y responde 200 ("Hello World!").
+    healthCheckPath: /api/v1
+    # El contenedor corre `prisma migrate deploy` antes de arrancar (ver Dockerfile).
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL # Neon, conexión DIRECTA (sin "-pooler"), sslmode=require
+        sync: false
+      - key: JWT_SECRET # Render genera uno aleatorio de 32+ caracteres
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRES_IN_DAYS
+        value: "7"
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: FRONTEND_URL # URL de Vercel, sin barra final (CORS)
+        sync: false
