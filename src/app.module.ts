@@ -17,6 +17,7 @@ import { HealthModule } from '@Health';
 import { PagosModule } from '@Pagos';
 import { PaquetesModule } from '@Paquetes';
 import { PerfilDirectorioModule } from '@PerfilDirectorio';
+import { DirectorioModule } from '@Directorio';
 import { PrismaModule } from '@Prisma';
 import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
@@ -41,6 +42,7 @@ import { validateEnv } from '@Config';
     PaquetesModule,
     PagosModule,
     PerfilDirectorioModule,
+    DirectorioModule,
     AuthModule,
     EstadoCuentaModule,
     CuotasModule,

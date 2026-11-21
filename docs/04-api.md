@@ -125,6 +125,24 @@ Reglas de H14:
   entero mayor o igual a 1”; 404 “Comunicado no encontrado” si no existe, está
   programado, es de otra torre o el enlace está mal formado.
 
+### Módulo 8: Directorio de residentes (H15, H16)
+
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| GET | /api/v1/directorio/mi-perfil | Mi configuración de privacidad y mis datos (incluido el teléfono) | Residente |
+| PUT | /api/v1/directorio/mi-perfil | Guarda si aparezco, qué datos muestro y mi teléfono | Residente |
+| GET | /api/v1/directorio?q=&pagina= | Busca vecinos por nombre o unidad (hotfix 1.0.1) | Residente |
+
+- `telefono` en el PUT es opcional (hotfix 1.0.1): omitido no cambia; vacío o `null` lo borra. Acepta
+  8 dígitos que empiezan con 2, 6 o 7, con o sin guion, y se guarda como `####-####`.
+  Errores 400: “El teléfono debe tener 8 dígitos y empezar con 2, 6 o 7 (ej. 7044-2727)” y
+  “Registra tu teléfono para poder mostrarlo” (si se marca mostrar teléfono sin tenerlo).
+- La búsqueda solo devuelve perfiles visibles de residentes activos, sin el propio. Primero aplica la
+  privacidad de H15 y después compara: un dato no marcado ni se devuelve (llega `null`) ni sirve para
+  encontrar al vecino. No distingue mayúsculas ni acentos. Orden por nombre (los que ocultan su
+  nombre, al final por unidad), 20 por página. Respuesta `{ datos: [{ nombre, unidad, telefono, correo }], total, pagina }`.
+- Errores: 400 “Escribe entre 2 y 60 caracteres” o página inválida; 401 sin sesión; 403 otros roles.
+
 ### Módulo 10: Reportes financieros y analíticos (H19, H20)
 
 | Método | Ruta | Descripción | Roles |

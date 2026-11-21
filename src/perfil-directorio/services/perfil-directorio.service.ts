@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { DatosDirectorioDto, GuardarPerfilDirectorioDto, PerfilDirectorioDto } from '@PerfilDirectorio/dto';
 import {
   PERFIL_OCULTO,
@@ -6,6 +6,8 @@ import {
   type DatosResidente,
   type OpcionesPerfil,
 } from '@PerfilDirectorio/repositories';
+
+export const MSG_SIN_TELEFONO = 'Registra tu teléfono para poder mostrarlo';
 
 /** Todos los datos propios, sin filtrar. */
 export function misDatos(d: DatosResidente): DatosDirectorioDto {
@@ -56,9 +58,13 @@ export class PerfilDirectorioService {
 
   /** El residente sale de la sesión: no hay forma de cambiar el perfil de otro. */
   async guardar(residenteId: string, dto: GuardarPerfilDirectorioDto): Promise<PerfilDirectorioDto> {
-    const datos = await this.datos(residenteId);
-    const guardado = await this.perfiles.guardar(residenteId, opciones(dto));
-    return this.aDto(opciones(guardado), datos);
+    const actuales = await this.datos(residenteId);
+    // Omitido: se conserva el teléfono guardado; null o vacío: se borra.
+    const telefono = dto.telefono === undefined ? actuales.telefono : dto.telefono;
+    if (dto.mostrarTelefono && !telefono) throw new BadRequestException(MSG_SIN_TELEFONO);
+
+    const guardado = await this.perfiles.guardar(residenteId, opciones(dto), dto.telefono);
+    return this.aDto(opciones(guardado), { ...actuales, telefono });
   }
 
   private async datos(residenteId: string): Promise<DatosResidente> {

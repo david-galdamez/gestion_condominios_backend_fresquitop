@@ -440,17 +440,21 @@ async function main() {
   // Perfil de directorio (H15): Residente Uno visible con nombre y unidad;
   // Residente Dos oculto (estado por defecto). Los demás no tienen fila y se
   // ven ocultos hasta que guarden su configuración.
+  // Hotfix 1.0.1: Residente Uno también registra teléfono (ficticio) y lo
+  // muestra, para probar la búsqueda de vecinos (H16) entrando como Residente Dos.
   const perfilesSeed = [
-    { email: 'residente1@example.com', visible: true, mostrarNombre: true, mostrarUnidad: true },
-    { email: 'residente2@example.com', visible: false, mostrarNombre: false, mostrarUnidad: false },
+    { email: 'residente1@example.com', visible: true, mostrarNombre: true, mostrarUnidad: true, telefono: '7000-0101' },
+    { email: 'residente2@example.com', visible: false, mostrarNombre: false, mostrarUnidad: false, telefono: null },
   ];
   for (const p of perfilesSeed) {
-    const residenteId = (await prisma.user.findUniqueOrThrow({ where: { email: p.email } })).id;
+    const residenteId = (
+      await prisma.user.update({ where: { email: p.email }, data: { telefono: p.telefono }, select: { id: true } })
+    ).id;
     const datos = {
       visible: p.visible,
       mostrarNombre: p.mostrarNombre,
       mostrarUnidad: p.mostrarUnidad,
-      mostrarTelefono: false,
+      mostrarTelefono: p.telefono !== null,
       mostrarCorreo: false,
     };
     await prisma.perfilDirectorio.upsert({
