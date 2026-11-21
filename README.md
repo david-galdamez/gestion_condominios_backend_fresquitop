@@ -608,7 +608,6 @@ npm run test:e2e
 
 El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente. Igual con las tareas de H02: `GeneracionAutomaticaService.generarMesActual()` y `AvisoCuotasService.avisarPorVencer()`.
 
-
 ```
 gestion_condominios_backend_fresquitop
 ├─ .dockerignore
@@ -664,7 +663,24 @@ gestion_condominios_backend_fresquitop
 │  │  │  └─ migration.sql
 │  │  ├─ 20261119000000_h18_notificaciones
 │  │  │  └─ migration.sql
+│  │  ├─ 20261119120000_h06_priorizar_asignar_reportes
+│  │  │  └─ migration.sql
 │  │  ├─ 20261120024056_h11_asambleas
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120090000_h04_reservas
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120142903_h27_votos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120151438_h27_relacion_asamblea_votos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120160000_h19_indices_panel
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120200000_h12_voto_inmutabilidad
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120210000_h14_lectura_comunicado
+│  │  │  ├─ down.sql
 │  │  │  └─ migration.sql
 │  │  └─ migration_lock.toml
 │  ├─ schema.prisma
@@ -709,6 +725,8 @@ gestion_condominios_backend_fresquitop
 │  │  ├─ dto
 │  │  │  ├─ area-response.dto.ts
 │  │  │  ├─ cambiar-estado-area.dto.ts
+│  │  │  ├─ disponibilidad.dto.spec.ts
+│  │  │  ├─ disponibilidad.dto.ts
 │  │  │  ├─ guardar-area.dto.spec.ts
 │  │  │  ├─ guardar-area.dto.ts
 │  │  │  └─ index.ts
@@ -718,10 +736,13 @@ gestion_condominios_backend_fresquitop
 │  │  ├─ index.ts
 │  │  ├─ repositories
 │  │  │  ├─ area.repository.ts
+│  │  │  ├─ disponibilidad.repository.ts
 │  │  │  └─ index.ts
 │  │  └─ services
 │  │     ├─ areas.service.spec.ts
 │  │     ├─ areas.service.ts
+│  │     ├─ disponibilidad.service.spec.ts
+│  │     ├─ disponibilidad.service.ts
 │  │     └─ index.ts
 │  ├─ asambleas
 │  │  ├─ asambleas.module.ts
@@ -729,13 +750,25 @@ gestion_condominios_backend_fresquitop
 │  │  │  ├─ asamblea.controller.ts
 │  │  │  └─ index.ts
 │  │  ├─ dto
+│  │  │  ├─ asamblea-residente.dto.ts
 │  │  │  ├─ crear-asamblea.dto.ts
-│  │  │  └─ index.ts
+│  │  │  ├─ emitir-votos.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ resultado-asamblea.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ asamblea-no-encontrada.error.ts
+│  │  │  ├─ codigo-verificacion-colision.error.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ unidad-ya-voto.error.ts
+│  │  │  ├─ votacion-no-abierta.error.ts
+│  │  │  └─ voto-invalido.error.ts
 │  │  ├─ index.ts
+│  │  ├─ participacion.ts
 │  │  ├─ repositories
 │  │  │  ├─ asamblea.repository.ts
 │  │  │  └─ index.ts
 │  │  └─ services
+│  │     ├─ asamblea.service.spec.ts
 │  │     ├─ asamblea.service.ts
 │  │     └─ index.ts
 │  ├─ auth
@@ -804,12 +837,16 @@ gestion_condominios_backend_fresquitop
 │  │  ├─ comunicados.module.ts
 │  │  ├─ controllers
 │  │  │  ├─ comunicados.controller.ts
-│  │  │  └─ index.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ mis-comunicados.controller.ts
 │  │  ├─ dto
 │  │  │  ├─ comunicado-response.dto.ts
 │  │  │  ├─ crear-comunicado.dto.spec.ts
 │  │  │  ├─ crear-comunicado.dto.ts
-│  │  │  └─ index.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ mi-comunicado-response.dto.ts
+│  │  │  ├─ mis-comunicados-query.dto.spec.ts
+│  │  │  └─ mis-comunicados-query.dto.ts
 │  │  ├─ index.ts
 │  │  ├─ repositories
 │  │  │  ├─ comunicado.repository.ts
@@ -818,7 +855,9 @@ gestion_condominios_backend_fresquitop
 │  │     ├─ comunicados-publicacion.service.ts
 │  │     ├─ comunicados.service.spec.ts
 │  │     ├─ comunicados.service.ts
-│  │     └─ index.ts
+│  │     ├─ index.ts
+│  │     ├─ mis-comunicados.service.spec.ts
+│  │     └─ mis-comunicados.service.ts
 │  ├─ config
 │  │  ├─ env.validation.ts
 │  │  └─ index.ts
@@ -943,6 +982,26 @@ gestion_condominios_backend_fresquitop
 │  │     ├─ pagos.service.ts
 │  │     ├─ pasarela-simulada.service.spec.ts
 │  │     └─ pasarela-simulada.service.ts
+│  ├─ panel
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ panel.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ panel-query.dto.spec.ts
+│  │  │  ├─ panel-query.dto.ts
+│  │  │  └─ panel-response.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ panel.calculos.spec.ts
+│  │  ├─ panel.calculos.ts
+│  │  ├─ panel.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ panel.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ panel.service.spec.ts
+│  │     └─ panel.service.ts
 │  ├─ paquetes
 │  │  ├─ controllers
 │  │  │  ├─ index.ts
@@ -990,14 +1049,23 @@ gestion_condominios_backend_fresquitop
 │  │     └─ prisma.service.ts
 │  ├─ reportes
 │  │  ├─ controllers
+│  │  │  ├─ admin-reportes.controller.spec.ts
+│  │  │  ├─ admin-reportes.controller.ts
 │  │  │  ├─ index.ts
 │  │  │  └─ reportes.controller.ts
 │  │  ├─ dto
+│  │  │  ├─ admin-reporte-response.dto.ts
+│  │  │  ├─ admin-reportes-query.dto.ts
+│  │  │  ├─ asignar-reporte.dto.ts
 │  │  │  ├─ create-reporte.dto.spec.ts
 │  │  │  ├─ create-reporte.dto.ts
 │  │  │  ├─ index.ts
 │  │  │  ├─ reporte-response.dto.ts
 │  │  │  └─ reportes-query.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  ├─ reporte-not-found.error.ts
+│  │  │  └─ reporte-ya-resuelto.error.ts
 │  │  ├─ filters
 │  │  │  ├─ foto-demasiado-grande.filter.ts
 │  │  │  └─ index.ts
@@ -1010,10 +1078,32 @@ gestion_condominios_backend_fresquitop
 │  │  │  ├─ index.ts
 │  │  │  └─ reporte.repository.ts
 │  │  └─ services
+│  │     ├─ admin-reportes.service.spec.ts
+│  │     ├─ admin-reportes.service.ts
 │  │     ├─ evidencia-storage.service.ts
 │  │     ├─ index.ts
 │  │     ├─ reportes.service.spec.ts
 │  │     └─ reportes.service.ts
+│  ├─ reservas
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ reservas.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ crear-reserva.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva-response.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva-horario-ocupado.error.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva.repository.ts
+│  │  ├─ reservas.module.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ reservas.service.spec.ts
+│  │     └─ reservas.service.ts
 │  ├─ unidades
 │  │  ├─ controllers
 │  │  │  ├─ index.ts
@@ -1052,14 +1142,18 @@ gestion_condominios_backend_fresquitop
 │  ├─ autorizaciones.e2e-spec.ts
 │  ├─ comunicados.e2e-spec.ts
 │  ├─ cuotas.e2e-spec.ts
+│  ├─ disponibilidad.e2e-spec.ts
 │  ├─ estado-cuenta.e2e-spec.ts
 │  ├─ health.e2e-spec.ts
 │  ├─ helpers
 │  │  ├─ app.ts
 │  │  └─ fixtures.ts
+│  ├─ mis-comunicados.e2e-spec.ts
 │  ├─ pagos.e2e-spec.ts
+│  ├─ panel.e2e-spec.ts
 │  ├─ paquetes.e2e-spec.ts
 │  ├─ perfil-directorio.e2e-spec.ts
+│  ├─ reservas.e2e-spec.ts
 │  └─ setup
 │     ├─ env.ts
 │     └─ global-setup.ts

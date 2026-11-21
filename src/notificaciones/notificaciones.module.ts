@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { NotificacionRepository } from '@Notificaciones/repositories';
-import { NotificacionService } from '@Notificaciones/services';
+import { NotificacionRepository } from './repositories/index.js';
+import { NotificacionService } from './services/index.js';
+import { NotificacionesController } from './controllers/index.js';
 
-/**
- * Módulo interno de notificaciones (H18).
- * Exporta NotificacionService para ser inyectado por otros módulos del backend.
- */
 @Module({
+  controllers: [NotificacionesController],
   providers: [NotificacionRepository, NotificacionService],
   exports: [NotificacionService],
 })
