@@ -49,8 +49,29 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  unidades      UsuarioUnidad[]
+  refreshTokens           RefreshToken[]
+  unidades                UsuarioUnidad[]
+  autorizacionesVisita    AutorizacionVisita[]       @relation("AutorizacionResidente")
+  autorizacionesEditadas  AutorizacionVisita[]       @relation("AutorizacionEditadaPor")
+  reportes                Reporte[]
+  historialReportes       HistorialReporte[]
+  paquetesRecibidos       Paquete[]
+  entradasRegistradas     RegistroAcceso[]           @relation("EntradaRegistradaPor")
+  salidasRegistradas      RegistroAcceso[]           @relation("SalidaRegistradaPor")
+  configuracionesCuota    ConfiguracionCuota[]
+  generacionesCuota       EjecucionGeneracion[]
+  comunicados             Comunicado[]
+  perfilDirectorio        PerfilDirectorio?
+  pagos                   Pago[]
+  notificacionesRecibidas NotificacionDestinatario[]
+  comunicadosLeidos       LecturaComunicado[]
+  exportaciones           Exportacion[]
+  asambleasCreadas        Asamblea[]                 @relation("AsambleaCreadaPor")
+  
+  // H12/H27: relación con los votos emitidos
+  votos                   Voto[]
+
+  reservas Reserva[]
 
   @@map("users")
 }
@@ -79,7 +100,8 @@ model Torre {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  unidades Unidad[]
+  unidades    Unidad[]
+  comunicados ComunicadoDestino[]
 
   @@map("torre")
 }
@@ -95,10 +117,19 @@ model Unidad {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  usuarios UsuarioUnidad[]
-  cuotas   Cuota[]
+  usuarios       UsuarioUnidad[]
+  cuotas         Cuota[]
+  autorizaciones AutorizacionVisita[]
+  paquetes       Paquete[]
+  accesos        RegistroAcceso[]
+  pagos          Pago[]
+  
+  // H12/H27: relación con los votos emitidos por la unidad
+  votos          Voto[]
 
   @@index([torreId])
+  reservas Reserva[]
+
   @@map("unidad")
 }
 
@@ -133,16 +164,750 @@ model Cuota {
   unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
 
   // "YYYY-MM"; ordena bien como texto.
-  periodo          String      @db.Char(7)
+  periodo          String       @db.Char(7)
   // CHECK (monto > 0) agregado a mano en el SQL de la migración.
-  monto            Decimal     @db.Decimal(10, 2)
-  fechaVencimiento DateTime    @map("fecha_vencimiento") @db.Date
-  estado           EstadoCuota @default(PENDIENTE)
-  pagadaEn         DateTime?   @map("pagada_en")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  monto            Decimal      @db.Decimal(10, 2)
+  fechaVencimiento DateTime     @map("fecha_vencimiento") @db.Date
+  estado           EstadoCuota  @default(PENDIENTE)
+  pagadaEn         DateTime?    @map("pagada_en")
+  avisos           AvisoCuota[]
+  pago             PagoCuota?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
   @@unique([unidadId, periodo])
   @@index([unidadId, estado])
   @@map("cuota")
+}
+
+enum TipoDocumento {
+  DUI
+  PASAPORTE
+
+  @@map("tipo_documento")
+}
+
+enum EstadoAutorizacion {
+  VIGENTE
+  USADA
+  CANCELADA
+  VENCIDA
+
+  @@map("estado_autorizacion")
+}
+
+// Pre-autorización de un visitante creada por un residente. No se borra: el
+// historial sirve a seguridad y auditoría (cancelar solo cambia el estado).
+model AutorizacionVisita {
+  id String @id @default(uuid()) @db.Uuid
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Siempre sale de la sesión, nunca del cliente.
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation("AutorizacionResidente", fields: [residenteId], references: [id], onDelete: Restrict)
+
+  nombre          String        @db.VarChar(60)
+  tipoDocumento   TipoDocumento @map("tipo_documento")
+  numeroDocumento String        @map("numero_documento") @db.VarChar(12)
+  placa           String?       @db.VarChar(10)
+
+  // Fecha y hora locales del negocio, sin zona: por eso date y time.
+  fechaVisita  DateTime @map("fecha_visita") @db.Date
+  horaEstimada DateTime @map("hora_estimada") @db.Time(0)
+
+  // 6 dígitos; único solo dentro del día de la visita (se reutiliza entre días).
+  codigo String             @db.Char(6)
+  estado EstadoAutorizacion @default(VIGENTE)
+
+  // H07b: último residente que la editó (null si nunca se editó). El cuándo es updated_at.
+  editadoPorId String? @map("editado_por_id") @db.Uuid
+  editadoPor   User?   @relation("AutorizacionEditadaPor", fields: [editadoPorId], references: [id], onDelete: Restrict)
+
+  // Registro de entrada que la usó (H08); a lo sumo uno.
+  acceso RegistroAcceso?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([codigo, fechaVisita])
+  @@index([residenteId, fechaVisita])
+  @@map("autorizacion_visita")
+}
+
+enum Mensajeria {
+  CORREOS
+  DHL
+  FEDEX
+  UPS
+  AMAZON
+  OTRA
+
+  @@map("mensajeria")
+}
+
+// H09 solo crea EN_PORTERIA; RETENIDO lo marca el sistema y ENTREGADO lo hace H10.
+enum EstadoPaquete {
+  EN_PORTERIA
+  RETENIDO
+  ENTREGADO
+
+  @@map("estado_paquete")
+}
+
+// Paquete recibido en portería (H09). No se borra: es la constancia de recepción.
+model Paquete {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "PAQ-000123": sale de la secuencia paquete_codigo_seq (creada en el SQL de la migración).
+  codigoPaquete String @unique @map("codigo_paquete") @db.VarChar(10)
+  // 6 dígitos aleatorios. Solo lo ve el residente; nunca se devuelve a seguridad.
+  codigoRetiro  String @map("codigo_retiro") @db.Char(6)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Nombre que trae la etiqueta (no tiene que ser un usuario).
+  destinatario String     @db.VarChar(60)
+  mensajeria   Mensajeria
+  guia         String?    @db.VarChar(40)
+  // Clave en la tabla archivo, p. ej. "paquetes/<uuid>.jpg".
+  fotoUrl      String     @map("foto_url") @db.VarChar(255)
+
+  estado     EstadoPaquete @default(EN_PORTERIA)
+  recibidoEn DateTime      @default(now()) @map("recibido_en")
+
+  // Guardia que lo recibió: siempre sale de la sesión.
+  recibidoPorId String @map("recibido_por") @db.Uuid
+  recibidoPor   User   @relation(fields: [recibidoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([estado, recibidoEn])
+  @@index([unidadId, estado])
+  @@index([unidadId, estado, recibidoEn(sort: Desc)])
+  @@map("paquete")
+}
+
+// Área común reservable (H03). No se borra: desactivarla conserva el historial
+// y las reservas futuras confirmadas (H04).
+model AreaComun {
+  id     String @id @default(uuid()) @db.Uuid
+  // Único; además el servicio compara sin distinguir mayúsculas.
+  nombre String @unique @db.VarChar(40)
+
+  // CHECK (capacidad BETWEEN 1 AND 200) agregado a mano en el SQL de la migración.
+  capacidad Int
+
+  // Hora local del negocio, sin zona. CHECK (en punto y cierre > apertura) en el SQL.
+  horaApertura DateTime @map("hora_apertura") @db.Time(0)
+  horaCierre   DateTime @map("hora_cierre") @db.Time(0)
+
+  // CHECK (duracion_max_horas BETWEEN 1 AND 8) en el SQL.
+  duracionMaxHoras Int     @default(3) @map("duracion_max_horas")
+  activa           Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reservas Reserva[]
+
+  @@map("area_comun")
+}
+
+enum EstadoReserva {
+  CONFIRMADA
+  CANCELADA
+  FINALIZADA
+
+  @@map("estado_reserva")
+}
+
+// Reserva de un área común (H04). Una reserva cancelada deja libre el horario.
+model Reserva {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Código legible RES-000123; la secuencia se crea en la migración SQL.
+  codigo String @unique @db.VarChar(10)
+
+  areaId String    @map("area_id") @db.Uuid
+  area   AreaComun @relation(fields: [areaId], references: [id], onDelete: Restrict)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Siempre se obtiene del usuario autenticado, nunca del body.
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  // Fecha y horas locales del negocio, almacenadas como date/time sin zona.
+  fecha      DateTime @db.Date
+  horaInicio DateTime @map("hora_inicio") @db.Time(0)
+  horaFin    DateTime @map("hora_fin") @db.Time(0)
+  asistentes Int
+
+  estado      EstadoReserva @default(CONFIRMADA)
+  canceladaEn DateTime?     @map("cancelada_en")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([areaId, fecha])
+  @@index([residenteId, fecha])
+  // H19: ocupación del panel por periodo.
+  @@index([fecha, estado])
+  @@map("reserva")
+}
+// ---------------------------------------------------------------------------
+// H05 · Reportes de incidencias y mantenimiento
+// ---------------------------------------------------------------------------
+
+enum CategoriaReporte {
+  FUGA
+  LUMINARIA
+  ASCENSOR
+  LIMPIEZA
+  OTRO
+
+  @@map("categoria_reporte")
+}
+
+enum PrioridadReporte {
+  BAJA
+  MEDIA
+  ALTA
+
+  @@map("prioridad_reporte")
+}
+
+enum EstadoReporte {
+  ABIERTO
+  EN_PROCESO
+  RESUELTO
+
+  @@map("estado_reporte")
+}
+
+// Problema reportado por un residente. Se muestra como REP-000123.
+model Reporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Consecutivo (serial de Postgres); la API lo formatea como "REP-000123".
+  numero Int @unique @default(autoincrement())
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  titulo      String           @db.VarChar(80)
+  categoria   CategoriaReporte
+  // Una torre (tabla `torre`) o un área común de la lista fija del backend.
+  ubicacion   String
+  descripcion String           @db.VarChar(500)
+
+  // H06: sin asignar al crearse (NULL); el administrador asigna prioridad y responsable juntos.
+  prioridad        PrioridadReporte?
+  responsable      String?           @db.VarChar(60)
+  estado           EstadoReporte     @default(ABIERTO)
+  // H24: fecha y comentario de cierre al pasar a RESUELTO (NULL mientras no esté resuelto).
+  resueltoEn       DateTime?         @map("resuelto_en")
+  comentarioCierre String?           @map("comentario_cierre") @db.VarChar(300)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  evidencias EvidenciaReporte[]
+  historial  HistorialReporte[]
+
+  @@index([residenteId, createdAt])
+  @@index([estado, categoria, createdAt])
+  @@index([prioridad, createdAt])
+  // H19: incidencias del panel por periodo.
+  @@index([createdAt, estado])
+  @@map("reporte")
+}
+
+// Foto adjunta a un reporte. `archivo` es la llave de almacenamiento (nombre
+// del archivo en disco), no una URL: la API arma la URL de descarga.
+model EvidenciaReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  archivo     String
+  mimeType    String   @map("mime_type")
+  tamanoBytes Int      @map("tamano_bytes")
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId])
+  @@map("evidencia_reporte")
+}
+
+// Trazabilidad: una fila por cada estado por el que pasa el reporte.
+model HistorialReporte {
+  id String @id @default(uuid()) @db.Uuid
+
+  reporteId String  @map("reporte_id") @db.Uuid
+  reporte   Reporte @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  estado     EstadoReporte
+  comentario String?       @db.VarChar(300)
+
+  cambiadoPorId String @map("cambiado_por_id") @db.Uuid
+  cambiadoPor   User   @relation(fields: [cambiadoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reporteId, createdAt])
+  @@map("historial_reporte")
+}
+
+// ---------------------------------------------------------------------------
+// H08 · Registro de entradas y salidas de visitantes
+// ---------------------------------------------------------------------------
+
+enum EstadoAcceso {
+  DENTRO
+  SALIO
+
+  @@map("estado_acceso")
+}
+
+// Una fila por visita: la entrada la crea y la salida se guarda en la misma
+// fila. No se borra: es la bitácora de portería.
+model RegistroAcceso {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Solo si entró con código. UNIQUE: una autorización se usa una vez.
+  autorizacionId String?             @unique @map("autorizacion_id") @db.Uuid
+  autorizacion   AutorizacionVisita? @relation(fields: [autorizacionId], references: [id], onDelete: Restrict)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Copia de los datos del visitante: con código salen de la autorización.
+  nombre          String        @db.VarChar(60)
+  tipoDocumento   TipoDocumento @map("tipo_documento")
+  numeroDocumento String        @map("numero_documento") @db.VarChar(12)
+  // Obligatorio sin pre-autorización (CHECK en el SQL), 5 a 100 caracteres.
+  motivo          String?       @db.VarChar(100)
+  // CHECK (preautorizado = (autorizacion_id IS NOT NULL)) en el SQL.
+  preautorizado   Boolean
+
+  estado      EstadoAcceso @default(DENTRO)
+  horaEntrada DateTime     @default(now()) @map("hora_entrada")
+  // CHECK: hay hora de salida si y solo si estado = SALIO.
+  horaSalida  DateTime?    @map("hora_salida")
+
+  // Guardias: siempre salen de la sesión.
+  entradaPorId String  @map("entrada_por") @db.Uuid
+  entradaPor   User    @relation("EntradaRegistradaPor", fields: [entradaPorId], references: [id], onDelete: Restrict)
+  salidaPorId  String? @map("salida_por") @db.Uuid
+  salidaPor    User?   @relation("SalidaRegistradaPor", fields: [salidaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Visitantes dentro (H25) y búsqueda por documento en portería.
+  @@index([estado, horaEntrada])
+  @@index([numeroDocumento])
+  @@map("registro_acceso")
+}
+
+// ---------------------------------------------------------------------------
+// H02 · Generación automática de cuotas mensuales
+// ---------------------------------------------------------------------------
+
+// Monto y día de vencimiento con que se generan las cuotas. Cada cambio inserta
+// una fila nueva (historial); la vigente es la más reciente. Cambiarla no toca
+// las cuotas ya generadas.
+model ConfiguracionCuota {
+  id String @id @default(uuid()) @db.Uuid
+
+  // CHECK (monto_mensual BETWEEN 1.00 AND 9999.99) agregado a mano en el SQL.
+  montoMensual   Decimal @map("monto_mensual") @db.Decimal(10, 2)
+  // CHECK (dia_vencimiento BETWEEN 1 AND 28) en el SQL: así existe en todos los meses.
+  diaVencimiento Int     @map("dia_vencimiento")
+
+  // Administrador que la guardó: siempre sale de la sesión.
+  creadaPorId String @map("creada_por") @db.Uuid
+  creadaPor   User   @relation(fields: [creadaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("configuracion_cuota")
+}
+
+enum OrigenGeneracion {
+  MANUAL
+  AUTOMATICA
+
+  @@map("origen_generacion")
+}
+
+// Bitácora de cada generación de cuotas (manual o del cron del día 1).
+model EjecucionGeneracion {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "YYYY-MM", igual que cuota.periodo.
+  periodo  String           @db.Char(7)
+  origen   OrigenGeneracion
+  creadas  Int
+  omitidas Int
+
+  // Null cuando la ejecuta el cron.
+  ejecutadaPorId String? @map("ejecutada_por") @db.Uuid
+  ejecutadaPor   User?   @relation(fields: [ejecutadaPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([periodo])
+  @@map("ejecucion_generacion")
+}
+
+enum TipoAvisoCuota {
+  POR_VENCER
+
+  @@map("tipo_aviso_cuota")
+}
+
+// Avisos enviados por cuota. El UNIQUE (cuota_id, tipo) hace que el aviso
+// diario sea seguro aunque la tarea corra dos veces el mismo día.
+model AvisoCuota {
+  id String @id @default(uuid()) @db.Uuid
+
+  cuotaId String @map("cuota_id") @db.Uuid
+  cuota   Cuota  @relation(fields: [cuotaId], references: [id], onDelete: Restrict)
+
+  tipo      TipoAvisoCuota
+  enviadoEn DateTime       @default(now()) @map("enviado_en")
+
+  @@unique([cuotaId, tipo])
+  @@map("aviso_cuota")
+}
+
+// ---------------------------------------------------------------------------
+// H13 · Comunicados
+// ---------------------------------------------------------------------------
+
+enum CategoriaComunicado {
+  AGUA
+  ELECTRICIDAD
+  MANTENIMIENTO
+  SEGURIDAD
+  AVISO_GENERAL
+
+  @@map("categoria_comunicado")
+}
+
+// PROGRAMADO -> PUBLICADO (tarea cada 5 min) -> EXPIRADO (si tiene expiración).
+enum EstadoComunicado {
+  PROGRAMADO
+  PUBLICADO
+  EXPIRADO
+
+  @@map("estado_comunicado")
+}
+
+// Comunicado del administrador. CHECK (fecha_expiracion > fecha_publicacion)
+// agregado a mano en el SQL de la migración. H14 usa fecha_expiracion.
+model Comunicado {
+  id        String              @id @default(uuid()) @db.Uuid
+  titulo    String              @db.VarChar(100)
+  contenido String              @db.VarChar(2000)
+  categoria CategoriaComunicado
+
+  // true = todo el condominio (sin filas en comunicado_destino).
+  paraTodos Boolean @map("para_todos")
+
+  fechaPublicacion DateTime         @map("fecha_publicacion")
+  fechaExpiracion  DateTime?        @map("fecha_expiracion")
+  estado           EstadoComunicado
+
+  autorId String @map("autor_id") @db.Uuid
+  autor   User   @relation(fields: [autorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  destinos ComunicadoDestino[]
+  lecturas LecturaComunicado[]
+
+  @@index([estado, fechaPublicacion])
+  @@map("comunicado")
+}
+
+// Torres destino de un comunicado que no es para todos.
+model ComunicadoDestino {
+  comunicadoId String     @map("comunicado_id") @db.Uuid
+  comunicado   Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+
+  torreId String @map("torre_id") @db.Uuid
+  torre   Torre  @relation(fields: [torreId], references: [id], onDelete: Restrict)
+
+  @@id([comunicadoId, torreId])
+  @@index([torreId])
+  @@map("comunicado_destino")
+}
+
+// H14 · Qué comunicados ya abrió cada residente. Sin fila = no leído. La PK
+// compuesta impide dos lecturas del mismo comunicado por el mismo residente.
+model LecturaComunicado {
+  comunicadoId String     @map("comunicado_id") @db.Uuid
+  comunicado   Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  leidoEn DateTime @default(now()) @map("leido_en")
+
+  @@id([comunicadoId, residenteId])
+  @@index([residenteId], map: "ix_lectura_residente")
+  @@map("lectura_comunicado")
+}
+
+// Privacidad del residente en el directorio (H15). Oculto por defecto; se crea
+// junto con el usuario al registrarse. H16 lo usa para buscar: solo perfiles
+// visibles, y los datos no marcados se devuelven como null.
+model PerfilDirectorio {
+  residenteId String @id @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  // CHECK (visible solo con al menos un dato marcado) agregado a mano en el SQL de la migración.
+  visible         Boolean @default(false)
+  mostrarNombre   Boolean @default(false) @map("mostrar_nombre")
+  mostrarUnidad   Boolean @default(false) @map("mostrar_unidad")
+  mostrarTelefono Boolean @default(false) @map("mostrar_telefono")
+  mostrarCorreo   Boolean @default(false) @map("mostrar_correo")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("perfil_directorio")
+}
+
+enum EstadoPago {
+  APROBADO
+  RECHAZADO
+
+  @@map("estado_pago")
+}
+
+// Pago con tarjeta de una o varias cuotas de una misma unidad (H21). No se
+// borra: es historial contable. Nunca guarda el número completo ni el CVV.
+model Pago {
+  id String @id @default(uuid()) @db.Uuid
+
+  // "TX-AAAAMMDD-000123" (secuencia pago_transaccion_seq en el SQL). Solo los aprobados.
+  numeroTransaccion String? @unique @map("numero_transaccion") @db.VarChar(20)
+
+  unidadId String @map("unidad_id") @db.Uuid
+  unidad   Unidad @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  // Siempre sale de la sesión.
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  // CHECK (monto > 0) y CHECK de estado/número/motivo en el SQL de la migración.
+  monto    Decimal    @db.Decimal(10, 2)
+  estado   EstadoPago
+  motivo   String?    @db.VarChar(100)
+  ultimos4 String     @db.Char(4)
+  titular  String     @db.VarChar(60)
+
+  // Idempotency-Key del frontend: la misma clave devuelve el pago original sin cobrar.
+  idempotencyKey String @unique @map("idempotency_key") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cuotas PagoCuota[]
+
+  @@index([unidadId, createdAt])
+  @@map("pago")
+}
+
+// Cuotas cubiertas por un pago aprobado. cuota_id único: una cuota no se paga dos veces.
+model PagoCuota {
+  pagoId String @map("pago_id") @db.Uuid
+  pago   Pago   @relation(fields: [pagoId], references: [id], onDelete: Restrict)
+
+  cuotaId String @unique @map("cuota_id") @db.Uuid
+  cuota   Cuota  @relation(fields: [cuotaId], references: [id], onDelete: Restrict)
+
+  monto Decimal @db.Decimal(10, 2)
+
+  @@id([pagoId, cuotaId])
+  @@map("pago_cuota")
+}
+
+// H18 · Servicio común de notificaciones
+
+// Aviso emitido por un módulo interno del backend hacia residentes.
+// CHECK de modulo_origen y destino_tipo agregados en el SQL de la migración.
+model Notificacion {
+  id           String   @id @default(uuid()) @db.Uuid
+  moduloOrigen String   @map("modulo_origen") @db.VarChar(15)
+  titulo       String   @db.VarChar(80)
+  mensaje      String   @db.VarChar(300)
+  referencia   String?  @db.VarChar(200)
+  destinoTipo  String   @map("destino_tipo") @db.VarChar(10)
+  destinoId    String?  @map("destino_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  destinatarios NotificacionDestinatario[]
+
+  @@map("notificacion")
+}
+
+// Estado de entrega y lectura de una notificación por cada residente activo.
+model NotificacionDestinatario {
+  notificacionId String       @map("notificacion_id") @db.Uuid
+  notificacion   Notificacion @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+
+  residenteId String @map("residente_id") @db.Uuid
+  residente   User   @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+
+  leida   Boolean   @default(false)
+  leidaEn DateTime? @map("leida_en")
+
+  @@id([notificacionId, residenteId])
+  @@index([residenteId, leida])
+  @@map("notificacion_destinatario")
+}
+
+// ---------------------------------------------------------------------------
+// H11 - Asambleas y votaciones digitales
+// ---------------------------------------------------------------------------
+
+enum EstadoAsamblea {
+  BORRADOR
+  PUBLICADA
+  ABIERTA
+  CERRADA
+
+  @@map("estado_asamblea")
+}
+
+model Asamblea {
+  id            String         @id @default(uuid()) @db.Uuid
+  titulo        String         @db.VarChar(100)
+  descripcion   String         @db.VarChar(1000)
+  fechaApertura DateTime       @map("fecha_apertura")
+  fechaCierre   DateTime       @map("fecha_cierre")
+  estado        EstadoAsamblea @default(BORRADOR)
+  publicadaEn   DateTime?      @map("publicada_en")
+  creadaPorId   String         @map("creada_por") @db.Uuid
+  creadaPor     User           @relation("AsambleaCreadaPor", fields: [creadaPorId], references: [id], onDelete: Restrict)
+
+  temas     TemaVotacion[]
+  votos Voto[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@map("asamblea")
+}
+
+model TemaVotacion {
+  id         String   @id @default(uuid()) @db.Uuid
+  asambleaId String   @map("asamblea_id") @db.Uuid
+  asamblea   Asamblea @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  titulo     String   @db.VarChar(150)
+  orden      Int
+
+  opciones OpcionTema[]
+  votos    Voto[]
+
+  @@unique([asambleaId, orden])
+  @@map("tema_votacion")
+}
+
+model OpcionTema {
+  id     String       @id @default(uuid()) @db.Uuid
+  temaId String       @map("tema_id") @db.Uuid
+  tema   TemaVotacion @relation(fields: [temaId], references: [id], onDelete: Cascade)
+  texto  String       @db.VarChar(100)
+  orden  Int
+
+  votos Voto[]
+
+  @@unique([temaId, orden])
+  @@map("opcion_tema")
+}
+
+// ---------------------------------------------------------------------------
+// H12 / H27 - Votaciones y comprobantes
+// ---------------------------------------------------------------------------
+
+model Voto {
+  id                 String        @id @default(uuid()) @db.Uuid
+  asambleaId         String        @map("asamblea_id") @db.Uuid
+  asamblea           Asamblea      @relation(fields: [asambleaId], references: [id], onDelete: Restrict)
+  temaId             String        @map("tema_id") @db.Uuid
+  tema               TemaVotacion  @relation(fields: [temaId], references: [id], onDelete: Restrict)
+  opcionId           String        @map("opcion_id") @db.Uuid
+  opcion             OpcionTema    @relation(fields: [opcionId], references: [id], onDelete: Restrict)
+  unidadId           String        @map("unidad_id") @db.Uuid
+  unidad             Unidad        @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  residenteId        String        @map("residente_id") @db.Uuid
+  residente          User          @relation(fields: [residenteId], references: [id], onDelete: Restrict)
+
+  codigoVerificacion String        @unique @map("codigo_verificacion") @db.Char(8)
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  @@unique([temaId, unidadId])
+  @@map("voto")
+}
+
+// ---------------------------------------------------------------------------
+// H20 · Exportación del reporte para la mesa directiva
+// ---------------------------------------------------------------------------
+
+enum FormatoExportacion {
+  PDF
+  EXCEL
+
+  @@map("formato_exportacion")
+}
+
+enum VersionExportacion {
+  DETALLADA
+  RESUMIDA
+
+  @@map("version_exportacion")
+}
+
+// Auditoría: una fila por archivo generado. CHECK (periodo_desde <= periodo_hasta)
+// agregado a mano en el SQL de la migración.
+model Exportacion {
+  id String @id @default(uuid()) @db.Uuid
+
+  administradorId String @map("administrador_id") @db.Uuid
+  administrador   User   @relation(fields: [administradorId], references: [id], onDelete: Restrict)
+
+  formato      FormatoExportacion
+  version      VersionExportacion
+  periodoDesde DateTime           @map("periodo_desde") @db.Date
+  periodoHasta DateTime           @map("periodo_hasta") @db.Date
+  generadaEn   DateTime           @default(now()) @map("generada_en")
+
+  @@index([administradorId])
+  @@index([generadaEn])
+  @@map("exportacion")
+}
+
+// Archivos subidos (fotos de paquetes y de reportes). Viven en la base porque
+// en Render gratis el disco se borra al apagarse el servicio.
+// `clave` es la ruta relativa de siempre ("paquetes/<uuid>.png"), así las
+// columnas que la guardan (paquete.foto_url, evidencia_reporte.archivo) no cambian.
+model Archivo {
+  id          String   @id @default(uuid()) @db.Uuid
+  clave       String   @unique @db.VarChar(255)
+  mimeType    String   @map("mime_type")
+  tamanoBytes Int      @map("tamano_bytes")
+  datos       Bytes
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("archivo")
 }

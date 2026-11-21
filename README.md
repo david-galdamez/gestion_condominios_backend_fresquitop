@@ -1,8 +1,56 @@
-# SI Backend Boilerplate
+# Gestión de Condominios — Backend
 
-API REST construida con **NestJS 12**, **Prisma 7** y **PostgreSQL 18**, con autenticación por usuario y contraseña lista para usar.
+Sistema web para administrar un condominio: estado de cuenta y morosidad,
+control de acceso de visitas, paquetería, áreas comunes, incidencias y
+comunicados. Los residentes, el administrador y el personal de seguridad
+trabajan sobre la misma información, cada uno con los permisos de su rol.
+
+Este repositorio contiene la **API REST** (NestJS 12, Prisma 7, PostgreSQL 18).
+El frontend está en
+[gestion_condominios_frontend_fresquitop](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop).
+La documentación completa del proyecto vive en la carpeta [`docs/`](docs/) de este repositorio.
+
+**Proyecto asignado:** Sistema de gestión de condominios · Ingeniería de Software 2026 · Equipo Fresquitop.
+
+## Integrantes
+
+| Integrante | Rol en el equipo | Historias |
+|---|---|---|
+| David Enrique Galdamez Menjivar | Desarrollador full stack | H01, H07, H07b, H13, H19 |
+| Omar Ernesto Quintanilla Aguilar | Desarrollador full stack | H06, H12, H18, H22, H24 |
+| Pablo Esteban Castellón Cerritos | Desarrollador full stack | H02, H08, H14, H20 |
+| Jaime Jiménez | Desarrollador full stack | H03, H09, H15, H21, H23 |
+| Edwin Guzmán | Desarrollador full stack | H04, H10, H16, H25 |
+| Gabriel Aguilar | Desarrollador full stack | H05, H11, H17, H26, H27 |
+
+## Despliegue
+
+| Componente | URL |
+|---|---|
+| Frontend | Pendiente de despliegue |
+| Backend (API) | Pendiente de despliegue |
+| Swagger | `<url-del-backend>/api/docs` (local: <http://localhost:3000/api/docs>) |
+
+Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>
+
+## Documentación
+
+1. [Guía de uso](docs/01-guia-de-uso.md): roles y flujos principales.
+2. [Arquitectura](docs/02-arquitectura.md): diagrama, stack, carpetas y decisiones técnicas.
+3. [Modelo de datos](docs/03-modelo-de-datos.md): diagrama entidad-relación y tablas.
+4. [API](docs/04-api.md): autenticación y endpoints por módulo.
+5. [Instalación local](docs/05-instalacion-local.md): docker-compose, variables, datos semilla y pruebas.
+6. [Despliegue](docs/06-despliegue.md): plataformas, publicación de versiones y variables de producción.
+7. [Forma de trabajo](docs/07-forma-de-trabajo.md): Git Flow, commits y PR.
+8. [Historias](docs/08-historias.md): estado de cada historia por módulo.
+9. [Problemas conocidos](docs/09-problemas-conocidos.md).
 
 ---
+
+# Detalles técnicos
+
+La sección siguiente documenta en detalle el stack heredado del boilerplate
+(Docker, Prisma, autenticación, alias y scripts).
 
 ## Tabla de contenidos
 
@@ -242,11 +290,13 @@ npm run db:reset
 
 ### Seed
 
-[prisma/seed.ts](prisma/seed.ts) crea un usuario de prueba mediante `upsert`, así que se puede correr las veces que haga falta:
+[prisma/seed.ts](prisma/seed.ts) crea datos de ejemplo de todos los módulos con `upsert` / ids fijos, así que se puede correr las veces que haga falta. Las contraseñas salen de las variables `SEED_PASSWORD_ADMIN`, `SEED_PASSWORD_RESIDENTE` y `SEED_PASSWORD_SEGURIDAD` de `.env` (con `NODE_ENV=production` son obligatorias).
 
-| Email | Contraseña |
-|---|---|
-| `demo@example.com` | `Demo1234!` |
+| Email | Rol | Contraseña |
+|---|---|---|
+| `admin@example.com` | Administrador | `SEED_PASSWORD_ADMIN` |
+| `residente1@example.com` | Residente (A-101, B-205) | `SEED_PASSWORD_RESIDENTE` |
+| `seguridad@example.com` | Seguridad | `SEED_PASSWORD_SEGURIDAD` |
 
 ---
 
@@ -290,11 +340,20 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 | Método | Ruta | Auth | Código | Descripción |
 |---|---|---|---|---|
 | `GET` | `/` | — | `200` | Health check |
-| `POST` | `/users` | — | `201` | Registra un usuario con email y contraseña |
+| `POST` | `/users` | Bearer · ADMINISTRADOR | `201` | Da de alta un usuario (queda como RESIDENTE) |
 | `POST` | `/auth/login` | — | `200` | Inicia sesión con email y contraseña |
 | `POST` | `/auth/refresh` | — | `200` | Renueva el par de tokens |
 | `POST` | `/auth/logout` | — | `204` | Cierra la sesión |
 | `GET` | `/auth/me` | Bearer | `200` | Usuario autenticado |
+| `POST` | `/accesos/entrada` | Bearer · SEGURIDAD | `201` | Registra la entrada con `{ codigo }` o sin pre-autorización (nombre, documento, unidad y motivo) |
+| `PATCH` | `/accesos/:id/salida` | Bearer · SEGURIDAD | `200` | Registra la salida en el mismo registro (`409` si ya salió) |
+| `GET` | `/accesos/buscar?q=` | Bearer · SEGURIDAD | `200` | Visitantes dentro por documento o por el código con que entraron |
+| `GET` | `/autorizaciones/buscar?q=` | Bearer · SEGURIDAD | `200` | Autorizaciones de hoy por código o documento |
+| `GET` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Configuración de cuota vigente (`404` si no existe) |
+| `PUT` | `/cuotas/configuracion` | Bearer · ADMINISTRADOR | `200` | Guarda monto mensual (1.00–9,999.99) y día de vencimiento (1–28) |
+| `POST` | `/cuotas/generar` | Bearer · ADMINISTRADOR | `201` | Genera las cuotas de un periodo `AAAA-MM` para las unidades activas (idempotente) |
+
+Tareas programadas de cuotas (hora de El Salvador): generación automática del mes el día 1 a las 00:00 y aviso "Tu cuota vence pronto" a las 08:00 para las cuotas Pendientes que vencen en 3 días.
 
 ### Ejemplos
 
@@ -302,10 +361,11 @@ Base: `http://localhost:3000/api/v1` · Documentación interactiva: `http://loca
 BASE=http://localhost:3000/api/v1
 ```
 
-**Registro**
+**Alta de usuario** (solo administrador; `$TOKEN` es su access token)
 
 ```bash
 curl -X POST $BASE/users \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"email":"nestor@example.com","password":"Str0ngPass"}'
 ```
@@ -327,7 +387,7 @@ La contraseña debe tener entre 8 y 72 caracteres, con al menos una minúscula, 
 ```bash
 curl -X POST $BASE/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"demo@example.com","password":"Demo1234!"}'
+  -d '{"email":"residente1@example.com","password":"<SEED_PASSWORD_RESIDENTE de tu .env>"}'
 ```
 
 ```jsonc
@@ -549,4 +609,560 @@ cp .env.test.example .env.test   # una sola vez; .env.test no se versiona
 npm run test:e2e
 ```
 
-El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente.
+El `globalSetup` crea la base si no existe y corre `prisma migrate deploy`; cada archivo vacía las tablas (`TRUNCATE`) antes de cada test. El cron de vencimiento no se dispara en los e2e: se invoca `CuotasVencimientoService.marcarVencidas()` directamente. Igual con las tareas de H02: `GeneracionAutomaticaService.generarMesActual()` y `AvisoCuotasService.avisarPorVencer()`.
+
+```
+gestion_condominios_backend_fresquitop
+├─ .dockerignore
+├─ .oxlintrc.json
+├─ .prettierignore
+├─ .prettierrc
+├─ docker-compose.yml
+├─ Dockerfile
+├─ docs
+│  ├─ 01-guia-de-uso.md
+│  ├─ 02-arquitectura.md
+│  ├─ 03-modelo-de-datos.md
+│  ├─ 04-api.md
+│  ├─ 05-instalacion-local.md
+│  ├─ 06-despliegue.md
+│  ├─ 07-forma-de-trabajo.md
+│  ├─ 08-historias.md
+│  └─ 09-problemas-conocidos.md
+├─ nest-cli.json
+├─ package-lock.json
+├─ package.json
+├─ prisma
+│  ├─ migrations
+│  │  ├─ 20260920172640_init
+│  │  │  └─ migration.sql
+│  │  ├─ 20260927163851_rename_username_to_email
+│  │  │  └─ migration.sql
+│  │  ├─ 20261104031638_roles_torres_unidades
+│  │  │  └─ migration.sql
+│  │  ├─ 20261104224235_cuotas
+│  │  │  └─ migration.sql
+│  │  ├─ 20261105023950_autorizaciones_visita
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109040000_areas_comunes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109050000_paquetes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261109062747_h05_reportes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261111010912_h02_generacion_cuotas
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261111210000_h08_registro_acceso
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261117180000_h07b_auditoria_autorizacion
+│  │  │  └─ migration.sql
+│  │  ├─ 20261117190000_h13_comunicados
+│  │  │  └─ migration.sql
+│  │  ├─ 20261118000000_perfil_directorio
+│  │  │  └─ migration.sql
+│  │  ├─ 20261118010000_pagos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261119000000_h18_notificaciones
+│  │  │  └─ migration.sql
+│  │  ├─ 20261119120000_h06_priorizar_asignar_reportes
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120024056_h11_asambleas
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120090000_h04_reservas
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120142903_h27_votos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120151438_h27_relacion_asamblea_votos
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120160000_h19_indices_panel
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120200000_h12_voto_inmutabilidad
+│  │  │  └─ migration.sql
+│  │  ├─ 20261120210000_h14_lectura_comunicado
+│  │  │  ├─ down.sql
+│  │  │  └─ migration.sql
+│  │  └─ migration_lock.toml
+│  ├─ schema.prisma
+│  └─ seed.ts
+├─ prisma.config.ts
+├─ README.md
+├─ src
+│  ├─ accesos
+│  │  ├─ accesos.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ accesos.controller.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ porteria-autorizaciones.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ acceso-response.dto.ts
+│  │  │  ├─ buscar.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ registrar-entrada.dto.spec.ts
+│  │  │  └─ registrar-entrada.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ acceso.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ accesos.service.spec.ts
+│  │     ├─ accesos.service.ts
+│  │     └─ index.ts
+│  ├─ app.module.ts
+│  ├─ app.setup.ts
+│  ├─ archivos
+│  │  ├─ archivos.module.ts
+│  │  ├─ index.ts
+│  │  └─ services
+│  │     ├─ archivos.service.spec.ts
+│  │     ├─ archivos.service.ts
+│  │     └─ index.ts
+│  ├─ areas
+│  │  ├─ areas.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ areas.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ area-response.dto.ts
+│  │  │  ├─ cambiar-estado-area.dto.ts
+│  │  │  ├─ disponibilidad.dto.spec.ts
+│  │  │  ├─ disponibilidad.dto.ts
+│  │  │  ├─ guardar-area.dto.spec.ts
+│  │  │  ├─ guardar-area.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ errors
+│  │  │  ├─ area-nombre-duplicado.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ area.repository.ts
+│  │  │  ├─ disponibilidad.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ areas.service.spec.ts
+│  │     ├─ areas.service.ts
+│  │     ├─ disponibilidad.service.spec.ts
+│  │     ├─ disponibilidad.service.ts
+│  │     └─ index.ts
+│  ├─ asambleas
+│  │  ├─ asambleas.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ asamblea.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ asamblea-residente.dto.ts
+│  │  │  ├─ crear-asamblea.dto.ts
+│  │  │  ├─ emitir-votos.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ resultado-asamblea.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ asamblea-no-encontrada.error.ts
+│  │  │  ├─ codigo-verificacion-colision.error.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ unidad-ya-voto.error.ts
+│  │  │  ├─ votacion-no-abierta.error.ts
+│  │  │  └─ voto-invalido.error.ts
+│  │  ├─ index.ts
+│  │  ├─ participacion.ts
+│  │  ├─ repositories
+│  │  │  ├─ asamblea.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ asamblea.service.spec.ts
+│  │     ├─ asamblea.service.ts
+│  │     └─ index.ts
+│  ├─ auth
+│  │  ├─ auth.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ auth.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ decorators
+│  │  │  ├─ current-user.decorator.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ public.decorator.ts
+│  │  │  └─ roles.decorator.ts
+│  │  ├─ dto
+│  │  │  ├─ auth-response.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ login.dto.ts
+│  │  │  └─ refresh-token.dto.ts
+│  │  ├─ guards
+│  │  │  ├─ index.ts
+│  │  │  ├─ jwt-auth.guard.ts
+│  │  │  ├─ roles.guard.spec.ts
+│  │  │  └─ roles.guard.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ refresh-token.repository.ts
+│  │  ├─ services
+│  │  │  ├─ auth.service.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ token.service.ts
+│  │  └─ types
+│  │     ├─ auth.types.ts
+│  │     └─ index.ts
+│  ├─ autorizaciones
+│  │  ├─ autorizaciones.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ autorizaciones.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ autorizacion-response.dto.ts
+│  │  │  ├─ crear-autorizacion.dto.spec.ts
+│  │  │  ├─ crear-autorizacion.dto.ts
+│  │  │  ├─ editar-autorizacion.dto.spec.ts
+│  │  │  ├─ editar-autorizacion.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ autorizacion.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ autorizaciones-vencimiento.service.spec.ts
+│  │     ├─ autorizaciones-vencimiento.service.ts
+│  │     ├─ autorizaciones.service.spec.ts
+│  │     ├─ autorizaciones.service.ts
+│  │     └─ index.ts
+│  ├─ common
+│  │  ├─ decorators
+│  │  │  ├─ index.ts
+│  │  │  └─ is-normalized-email.decorator.ts
+│  │  └─ fechas
+│  │     ├─ fechas.decorators.ts
+│  │     ├─ fechas.spec.ts
+│  │     ├─ fechas.ts
+│  │     └─ index.ts
+│  ├─ comunicados
+│  │  ├─ comunicados.module.ts
+│  │  ├─ controllers
+│  │  │  ├─ comunicados.controller.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ mis-comunicados.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ comunicado-response.dto.ts
+│  │  │  ├─ crear-comunicado.dto.spec.ts
+│  │  │  ├─ crear-comunicado.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ mi-comunicado-response.dto.ts
+│  │  │  ├─ mis-comunicados-query.dto.spec.ts
+│  │  │  └─ mis-comunicados-query.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ comunicado.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ comunicados-publicacion.service.ts
+│  │     ├─ comunicados.service.spec.ts
+│  │     ├─ comunicados.service.ts
+│  │     ├─ index.ts
+│  │     ├─ mis-comunicados.service.spec.ts
+│  │     └─ mis-comunicados.service.ts
+│  ├─ config
+│  │  ├─ env.validation.ts
+│  │  └─ index.ts
+│  ├─ cuotas
+│  │  ├─ controllers
+│  │  │  ├─ cuotas.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ cuotas.module.ts
+│  │  ├─ dto
+│  │  │  ├─ configuracion-response.dto.ts
+│  │  │  ├─ cuotas-dto.spec.ts
+│  │  │  ├─ generacion-response.dto.ts
+│  │  │  ├─ generar-cuotas.dto.ts
+│  │  │  ├─ guardar-configuracion.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ periodos.spec.ts
+│  │  ├─ periodos.ts
+│  │  ├─ repositories
+│  │  │  ├─ configuracion-cuota.repository.ts
+│  │  │  ├─ generacion-cuota.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ aviso-cuotas.service.spec.ts
+│  │     ├─ aviso-cuotas.service.ts
+│  │     ├─ cuotas.service.spec.ts
+│  │     ├─ cuotas.service.ts
+│  │     ├─ generacion-automatica.service.ts
+│  │     └─ index.ts
+│  ├─ estado-cuenta
+│  │  ├─ controllers
+│  │  │  ├─ estado-cuenta.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ dto
+│  │  │  ├─ estado-cuenta-query.dto.spec.ts
+│  │  │  ├─ estado-cuenta-query.dto.ts
+│  │  │  ├─ estado-cuenta-response.dto.ts
+│  │  │  └─ index.ts
+│  │  ├─ estado-cuenta.module.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ cuota.repository.ts
+│  │  │  └─ index.ts
+│  │  └─ services
+│  │     ├─ cuotas-vencimiento.service.spec.ts
+│  │     ├─ cuotas-vencimiento.service.ts
+│  │     ├─ estado-cuenta.service.spec.ts
+│  │     ├─ estado-cuenta.service.ts
+│  │     └─ index.ts
+│  ├─ health
+│  │  ├─ controllers
+│  │  │  ├─ health.controller.spec.ts
+│  │  │  ├─ health.controller.ts
+│  │  │  └─ index.ts
+│  │  ├─ health.module.ts
+│  │  ├─ index.ts
+│  │  └─ services
+│  │     ├─ health.service.ts
+│  │     └─ index.ts
+│  ├─ main.ts
+│  ├─ morosidad
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad.controller.spec.ts
+│  │  │  └─ morosidad.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad-query.dto.spec.ts
+│  │  │  ├─ morosidad-query.dto.ts
+│  │  │  └─ morosidad-response.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  └─ torre-not-found.error.ts
+│  │  ├─ index.ts
+│  │  ├─ morosidad.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  ├─ morosidad.repository.spec.ts
+│  │  │  └─ morosidad.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ morosidad.service.spec.ts
+│  │     └─ morosidad.service.ts
+│  ├─ notificaciones
+│  │  ├─ errors
+│  │  │  ├─ dato-invalido.error.ts
+│  │  │  ├─ destino-no-existe.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ notificaciones.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ notificacion.repository.ts
+│  │  ├─ services
+│  │  │  ├─ index.ts
+│  │  │  ├─ notificacion.service.spec.ts
+│  │  │  └─ notificacion.service.ts
+│  │  └─ types
+│  │     ├─ index.ts
+│  │     └─ notificacion.types.ts
+│  ├─ pagos
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ pagos.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ pagar-cuotas.dto.spec.ts
+│  │  │  ├─ pagar-cuotas.dto.ts
+│  │  │  ├─ pago-response.dto.ts
+│  │  │  └─ pendientes-query.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ clave-idempotencia-repetida.error.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ pagos.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ pago.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ pagos.service.spec.ts
+│  │     ├─ pagos.service.ts
+│  │     ├─ pasarela-simulada.service.spec.ts
+│  │     └─ pasarela-simulada.service.ts
+│  ├─ panel
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ panel.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ panel-query.dto.spec.ts
+│  │  │  ├─ panel-query.dto.ts
+│  │  │  └─ panel-response.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ panel.calculos.spec.ts
+│  │  ├─ panel.calculos.ts
+│  │  ├─ panel.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ panel.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ panel.service.spec.ts
+│  │     └─ panel.service.ts
+│  ├─ paquetes
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ paquetes.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  ├─ paquete-response.dto.ts
+│  │  │  ├─ registrar-paquete.dto.spec.ts
+│  │  │  └─ registrar-paquete.dto.ts
+│  │  ├─ filters
+│  │  │  ├─ foto-demasiado-grande.filter.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ paquetes.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ paquete.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ paquetes.service.spec.ts
+│  │     └─ paquetes.service.ts
+│  ├─ perfil-directorio
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ guardar-perfil-directorio.dto.spec.ts
+│  │  │  ├─ guardar-perfil-directorio.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio-response.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ perfil-directorio.module.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ perfil-directorio.repository.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ perfil-directorio.service.spec.ts
+│  │     └─ perfil-directorio.service.ts
+│  ├─ prisma
+│  │  ├─ index.ts
+│  │  ├─ prisma.module.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     └─ prisma.service.ts
+│  ├─ reportes
+│  │  ├─ controllers
+│  │  │  ├─ admin-reportes.controller.spec.ts
+│  │  │  ├─ admin-reportes.controller.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ reportes.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ admin-reporte-response.dto.ts
+│  │  │  ├─ admin-reportes-query.dto.ts
+│  │  │  ├─ asignar-reporte.dto.ts
+│  │  │  ├─ create-reporte.dto.spec.ts
+│  │  │  ├─ create-reporte.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  ├─ reporte-response.dto.ts
+│  │  │  └─ reportes-query.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  ├─ reporte-not-found.error.ts
+│  │  │  └─ reporte-ya-resuelto.error.ts
+│  │  ├─ filters
+│  │  │  ├─ foto-demasiado-grande.filter.ts
+│  │  │  └─ index.ts
+│  │  ├─ index.ts
+│  │  ├─ reportes.constants.ts
+│  │  ├─ reportes.module.ts
+│  │  ├─ reportes.types.ts
+│  │  ├─ reportes.utils.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ reporte.repository.ts
+│  │  └─ services
+│  │     ├─ admin-reportes.service.spec.ts
+│  │     ├─ admin-reportes.service.ts
+│  │     ├─ evidencia-storage.service.ts
+│  │     ├─ index.ts
+│  │     ├─ reportes.service.spec.ts
+│  │     └─ reportes.service.ts
+│  ├─ reservas
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  └─ reservas.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ crear-reserva.dto.ts
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva-response.dto.ts
+│  │  ├─ errors
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva-horario-ocupado.error.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ reserva.repository.ts
+│  │  ├─ reservas.module.ts
+│  │  └─ services
+│  │     ├─ index.ts
+│  │     ├─ reservas.service.spec.ts
+│  │     └─ reservas.service.ts
+│  ├─ unidades
+│  │  ├─ controllers
+│  │  │  ├─ index.ts
+│  │  │  ├─ torres.controller.ts
+│  │  │  └─ unidades.controller.ts
+│  │  ├─ dto
+│  │  │  ├─ index.ts
+│  │  │  └─ unidad-resumen.dto.ts
+│  │  ├─ index.ts
+│  │  ├─ repositories
+│  │  │  ├─ index.ts
+│  │  │  └─ unidad.repository.ts
+│  │  └─ unidades.module.ts
+│  └─ users
+│     ├─ controllers
+│     │  ├─ index.ts
+│     │  └─ users.controller.ts
+│     ├─ dto
+│     │  ├─ create-user.dto.ts
+│     │  ├─ index.ts
+│     │  └─ user-response.dto.ts
+│     ├─ errors
+│     │  ├─ email-already-taken.error.ts
+│     │  └─ index.ts
+│     ├─ index.ts
+│     ├─ repositories
+│     │  ├─ index.ts
+│     │  └─ user.repository.ts
+│     ├─ services
+│     │  ├─ index.ts
+│     │  └─ users.service.ts
+│     └─ users.module.ts
+├─ test
+│  ├─ accesos.e2e-spec.ts
+│  ├─ areas.e2e-spec.ts
+│  ├─ autorizaciones.e2e-spec.ts
+│  ├─ comunicados.e2e-spec.ts
+│  ├─ cuotas.e2e-spec.ts
+│  ├─ disponibilidad.e2e-spec.ts
+│  ├─ estado-cuenta.e2e-spec.ts
+│  ├─ health.e2e-spec.ts
+│  ├─ helpers
+│  │  ├─ app.ts
+│  │  └─ fixtures.ts
+│  ├─ mis-comunicados.e2e-spec.ts
+│  ├─ pagos.e2e-spec.ts
+│  ├─ panel.e2e-spec.ts
+│  ├─ paquetes.e2e-spec.ts
+│  ├─ perfil-directorio.e2e-spec.ts
+│  ├─ reservas.e2e-spec.ts
+│  └─ setup
+│     ├─ env.ts
+│     └─ global-setup.ts
+├─ tsconfig.build.json
+├─ tsconfig.json
+├─ vitest.config.e2e.ts
+└─ vitest.config.ts
+
+```

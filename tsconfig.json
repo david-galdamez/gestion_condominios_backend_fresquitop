@@ -1,5 +1,5 @@
 {
-  "compilerOptions": {
+"compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -41,15 +41,50 @@
       "@Auth/*": ["./src/auth/*/index.ts"],
       "@Users": ["./src/users/index.ts"],
       "@Users/*": ["./src/users/*/index.ts"],
+      "@Paquetes": ["./src/paquetes/index.ts"],
+      "@Paquetes/*": ["./src/paquetes/*/index.ts"],
+      "@Archivos": ["./src/archivos/index.ts"],
+      "@Archivos/*": ["./src/archivos/*/index.ts"],
+      "@Notificaciones": ["./src/notificaciones/index.ts"],
+      "@Notificaciones/*": ["./src/notificaciones/*/index.ts"],
       "@EstadoCuenta": ["./src/estado-cuenta/index.ts"],
       "@EstadoCuenta/*": ["./src/estado-cuenta/*/index.ts"],
+      "@Cuotas": ["./src/cuotas/index.ts"],
+      "@Cuotas/*": ["./src/cuotas/*/index.ts"],
+      "@Areas": ["./src/areas/index.ts"],
+      "@Reservas": ["./src/reservas/index.ts"],
+      "@Areas/*": ["./src/areas/*/index.ts"],
+      "@Reservas/*": ["./src/reservas/*/index.ts"],
+      "@PerfilDirectorio": ["./src/perfil-directorio/index.ts"],
+      "@PerfilDirectorio/*": ["./src/perfil-directorio/*/index.ts"],
+      "@Pagos": ["./src/pagos/index.ts"],
+      "@Pagos/*": ["./src/pagos/*/index.ts"],
+      "@Autorizaciones": ["./src/autorizaciones/index.ts"],
+      "@Autorizaciones/*": ["./src/autorizaciones/*/index.ts"],
+      "@Accesos": ["./src/accesos/index.ts"],
+      "@Accesos/*": ["./src/accesos/*/index.ts"],
+      "@Unidades": ["./src/unidades/index.ts"],
+      "@Unidades/*": ["./src/unidades/*/index.ts"],
+      "@Morosidad": ["./src/morosidad/index.ts"],
+      "@Morosidad/*": ["./src/morosidad/*/index.ts"],
       "@Health": ["./src/health/index.ts"],
       "@Health/*": ["./src/health/*/index.ts"],
       "@Prisma": ["./src/prisma/index.ts"],
       "@Prisma/*": ["./src/prisma/*/index.ts"],
       "@Common/*": ["./src/common/*/index.ts"],
       "@Config": ["./src/config/index.ts"],
-      "@PrismaClient": ["./src/generated/prisma/client.ts"]
+      "@Panel": ["./src/panel/index.ts"],
+      "@Panel/*": ["./src/panel/*/index.ts"],
+      "@Exportaciones": ["./src/exportaciones/index.ts"],
+      "@Exportaciones/*": ["./src/exportaciones/*/index.ts"],
+      "@PrismaClient": ["./src/generated/prisma/client.ts"],
+      "@Reportes": ["./src/reportes/index.ts"],
+      "@Reportes/*": ["./src/reportes/*/index.ts"],
+      "@Comunicados": ["./src/comunicados/index.ts"],
+      "@Comunicados/*": ["./src/comunicados/*/index.ts"],
+      "@Asambleas": ["./src/asambleas/index.ts"],
+      "@Asambleas/*": ["./src/asambleas/*/index.ts"]
     }
   }
 }
+

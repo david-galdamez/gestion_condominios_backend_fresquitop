@@ -2,12 +2,28 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AreasModule } from '@Areas';
 import { AuthModule } from '@Auth';
+import { ComunicadosModule } from '@Comunicados';
 import { JwtAuthGuard, RolesGuard } from '@Auth/guards';
+import { CuotasModule } from '@Cuotas';
 import { EstadoCuentaModule } from '@EstadoCuenta';
+import { UnidadesModule } from '@Unidades';
+import { AutorizacionesModule } from '@Autorizaciones';
+import { AccesosModule } from '@Accesos';
+import { MorosidadModule } from '@Morosidad';
+import { NotificacionesModule } from '@Notificaciones';
 import { HealthModule } from '@Health';
+import { PagosModule } from '@Pagos';
+import { PaquetesModule } from '@Paquetes';
+import { PerfilDirectorioModule } from '@PerfilDirectorio';
 import { PrismaModule } from '@Prisma';
+import { ReportesModule } from '@Reportes';
 import { UsersModule } from '@Users';
+import { ReservasModule } from '@Reservas';
+import { AsambleasModule } from './asambleas/index.js';
+import { PanelModule } from '@Panel';
+import { ExportacionesModule } from '@Exportaciones';
 import { validateEnv } from '@Config';
 
 @Module({
@@ -15,24 +31,39 @@ import { validateEnv } from '@Config';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      // Si falta DATABASE_URL o JWT_SECRET, la app no arranca.
       validate: validateEnv,
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
     UsersModule,
+    NotificacionesModule,
+    PaquetesModule,
+    PagosModule,
+    PerfilDirectorioModule,
     AuthModule,
     EstadoCuentaModule,
+    CuotasModule,
+    UnidadesModule,
+    // Antes que AutorizacionesModule: GET /autorizaciones/buscar (H08) debe
+    // registrarse antes que GET /autorizaciones/:id (H07b) o lo captura el :id.
+    AccesosModule,
+    AutorizacionesModule,
+    MorosidadModule,
+    AreasModule,
+    ReservasModule,
+    ReportesModule,
+    ComunicadosModule,
+    AsambleasModule,
+    PanelModule,
+    ExportacionesModule,
   ],
   providers: [
     {
-      // Todo cerrado por defecto: las rutas públicas se abren con @Public().
       provide: APP_GUARD,
       useExisting: JwtAuthGuard,
     },
     {
-      // Debe ir después del JwtAuthGuard: necesita request.user ya cargado.
       provide: APP_GUARD,
       useExisting: RolesGuard,
     },
