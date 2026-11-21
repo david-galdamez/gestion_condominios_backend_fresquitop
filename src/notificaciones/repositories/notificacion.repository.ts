@@ -15,7 +15,7 @@ export interface UsuarioDestinoRegistro {
  */
 @Injectable()
 export class NotificacionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   findUsuarioById(usuarioId: string): Promise<UsuarioDestinoRegistro | null> {
     return this.prisma.user.findUnique({
@@ -114,6 +114,48 @@ export class NotificacionRepository {
         id: notificacion.id,
         destinatarios: idsUnicos.length,
       };
+    });
+  }
+
+  async listarPorResidente(residenteId: string, pagina: number, porPagina: number = 20) {
+    const skip = (pagina - 1) * porPagina;
+    const [registros, total] = await this.prisma.$transaction([
+      this.prisma.notificacionDestinatario.findMany({
+        where: { residenteId },
+        skip,
+        take: porPagina,
+        orderBy: { notificacion: { createdAt: 'desc' } },
+        include: { notificacion: true },
+      }),
+      this.prisma.notificacionDestinatario.count({ where: { residenteId } }),
+    ]);
+
+    return { registros, total };
+  }
+
+  async contarNoLeidas(residenteId: string) {
+    return this.prisma.notificacionDestinatario.count({
+      where: { residenteId, leida: false },
+    });
+  }
+
+  async marcarComoLeida(residenteId: string, notificacionId: string) {
+    return this.prisma.notificacionDestinatario.updateMany({
+      where: { residenteId, notificacionId, leida: false },
+      data: { leida: true, leidaEn: new Date() },
+    });
+  }
+
+  async marcarTodasComoLeidas(residenteId: string) {
+    return this.prisma.notificacionDestinatario.updateMany({
+      where: { residenteId, leida: false },
+      data: { leida: true, leidaEn: new Date() },
+    });
+  }
+
+  async existeNotificacionParaResidente(residenteId: string, notificacionId: string) {
+    return this.prisma.notificacionDestinatario.findUnique({
+      where: { notificacionId_residenteId: { notificacionId, residenteId } },
     });
   }
 }

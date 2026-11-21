@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Rol } from '@PrismaClient';
 import { DatoInvalidoError, DestinoNoExisteError } from '@Notificaciones/errors';
 import { NotificacionRepository } from '@Notificaciones/repositories';
@@ -12,6 +12,7 @@ import {
   type ResultadoEnvio,
   type TipoDestino,
 } from '@Notificaciones/types';
+
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,6 +93,43 @@ export class NotificacionService {
       },
       residenteIds,
     );
+  }
+
+    async listarMisNotificaciones(residenteId: string, pagina: number = 1) {
+    const porPagina = 20;
+    const { registros, total } = await this.repo.listarPorResidente(residenteId, pagina, porPagina);
+    const totalPaginas = Math.ceil(total / porPagina);
+
+    const datos = registros.map((r) => ({
+      id: r.notificacion.id,
+      titulo: r.notificacion.titulo,
+      mensaje: r.notificacion.mensaje,
+      moduloOrigen: r.notificacion.moduloOrigen,
+      referencia: r.notificacion.referencia,
+      leida: r.leida,
+      leidaEn: r.leidaEn?.toISOString() ?? null,
+      createdAt: r.notificacion.createdAt.toISOString(),
+    }));
+
+    return { datos, total, pagina, totalPaginas };
+  }
+
+  async contarNoLeidas(residenteId: string) {
+    const noLeidas = await this.repo.contarNoLeidas(residenteId);
+    return { noLeidas };
+  }
+
+  async marcarComoLeida(residenteId: string, notificacionId: string) {
+    const existe = await this.repo.existeNotificacionParaResidente(residenteId, notificacionId);
+    if (!existe) throw new NotFoundException('Aviso no encontrado');
+
+    await this.repo.marcarComoLeida(residenteId, notificacionId);
+    return { success: true };
+  }
+
+  async marcarTodasComoLeidas(residenteId: string) {
+    await this.repo.marcarTodasComoLeidas(residenteId);
+    return { success: true };
   }
 
   private async resolverDestinatarios(destinatario: DestinatarioAviso): Promise<string[]> {
