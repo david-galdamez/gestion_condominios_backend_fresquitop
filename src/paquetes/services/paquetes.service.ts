@@ -102,4 +102,43 @@ export class PaquetesService {
       this.logger.error(`No se pudo avisar del paquete ${p.codigoPaquete}`, error instanceof Error ? error.stack : error);
     }
   }
+
+    async listarMisPaquetes(userId: string, filtro: string, pagina: number) {
+    const unidadId = await this.paquetes.obtenerUnidadDelUsuario(userId);
+    if (!unidadId) throw new NotFoundException('Usuario sin unidad asignada');
+    
+    const { registros, total } = await this.paquetes.listarPorUnidad(unidadId, filtro, pagina);
+    const totalPaginas = Math.ceil(total / 20);
+
+    const datos = registros.map((p) => ({
+      id: p.id,
+      codigoPaquete: p.codigoPaquete,
+      recibidoEn: p.recibidoEn.toISOString(),
+      mensajeria: p.mensajeria,
+      estado: p.estado,
+      entregadoEn: p.estado === 'ENTREGADO' ? p.updatedAt.toISOString() : null,
+    }));
+
+    return { datos, total, pagina, totalPaginas };
+  }
+
+  async obtenerDetallePaquete(userId: string, paqueteId: string) {
+    const unidadId = await this.paquetes.obtenerUnidadDelUsuario(userId);
+    if (!unidadId) throw new NotFoundException('Usuario sin unidad asignada');
+    
+    const paquete = await this.paquetes.buscarPorIdYUnidad(paqueteId, unidadId);
+    if (!paquete) throw new NotFoundException('Paquete no encontrado');
+
+    const mostrarCodigo = paquete.estado === 'EN_PORTERIA' || paquete.estado === 'RETENIDO';
+
+    return {
+      id: paquete.id,
+      codigoPaquete: paquete.codigoPaquete,
+      codigoRetiro: mostrarCodigo ? paquete.codigoRetiro : null,
+      mensajeria: paquete.mensajeria,
+      estado: paquete.estado,
+      recibidoEn: paquete.recibidoEn.toISOString(),
+      entregadoEn: paquete.estado === 'ENTREGADO' ? paquete.updatedAt.toISOString() : null,
+    };
+  }
 }
