@@ -87,4 +87,4 @@ Tablero: <https://trello.com/b/taNV3ODs/condominiosfresquitop>.
 | ID | Historia | Responsable | Card | PR | Estado |
 |---|---|---|---|---|---|
 | H19 | Ver la salud del condominio en un panel | David Galdamez | [card](https://trello.com/c/SRTcy34I) | [BE #25](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/25), [FE #22](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/22) | En develop |
-| H20 | Exportar el reporte para la mesa directiva | Pablo Castellón | [card](https://trello.com/c/ZfXrgdHI) | — | En revisión |
+| H20 | Exportar el reporte para la mesa directiva | Pablo Castellón | [card](https://trello.com/c/ZfXrgdHI) | [BE #32](https://github.com/david-galdamez/gestion_condominios_backend_fresquitop/pull/32), [FE #28](https://github.com/david-galdamez/gestion_condominios_frontend_fresquitop/pull/28) | En develop |
