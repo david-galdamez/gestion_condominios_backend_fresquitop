@@ -1,5 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { IsNormalizedEmail } from '@Common/decorators';
 
 export class CreateUserDto {
@@ -33,6 +44,19 @@ export class CreateUserDto {
   @MaxLength(120)
   nombre!: string;
 
-  // El rol no se acepta en el registro público: todo usuario queda como RESIDENTE
+  @ApiPropertyOptional({
+    description: 'Unidades que habita el residente (deben existir y estar activas).',
+    type: [String],
+    format: 'uuid',
+    example: ['0b5e3c1e-7f0a-4c55-9a53-2f4f3f5f0a11'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20, { message: 'No se pueden asignar más de 20 unidades.' })
+  @ArrayUnique({ message: 'Las unidades no pueden repetirse.' })
+  @IsUUID('all', { each: true, message: 'Cada unidad debe ser un UUID válido.' })
+  unidadIds?: string[];
+
+  // El rol no se acepta en el body: todo usuario queda como RESIDENTE
   // (default de la base). La asignación de roles será responsabilidad de un flujo de administración.
 }
